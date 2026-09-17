@@ -1,0 +1,26 @@
+# Environments
+.venv/
+env/
+venv/
+.env
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# R files
+.Rproj.user/
+.Rhistory
+.RData
+.Ruserdata
+
+# OS metadata
+.DS_Store
+Thumbs.db
+ehthumbs.db
+
+# Uncompressed SQLite database (compressed 14MB .sqlite.gz is tracked instead)
+data/processed/thor_wwii.sqlite
