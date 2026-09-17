@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>USAAF Worldwide Combat Chronology (1941–1945) — Explorer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #38bdf8;
+      --primary-hover: #0ea5e9;
+      --accent-red: #ef4444;
+      --accent-amber: #f59e0b;
+      --accent-green: #10b981;
+      --accent-purple: #a855f7;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: 0 0 60px 0;
+    }
+    header {
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      border-bottom: 1px solid var(--card-border);
+      padding: 30px 24px 24px 24px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-content {
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    .title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+    .subtitle {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .nav-links a {
+      color: var(--primary);
+      text-decoration: none;
+      font-size: 0.85rem;
+      margin-left: 18px;
+      font-weight: 500;
+      border: 1px solid #0284c7;
+      padding: 6px 12px;
+      border-radius: 6px;
+      transition: all 0.15s;
+    }
+    .nav-links a:hover {
+      background: #0284c7;
+      color: #fff;
+    }
+    .filter-bar {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+    @media (max-width: 900px) {
+      .filter-bar { grid-template-columns: 1fr; }
+    }
+    input[type="text"], select {
+      background: #0f172a;
+      border: 1px solid var(--card-border);
+      color: #fff;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input[type="text"]:focus, select:focus {
+      border-color: var(--primary);
+    }
+    .preset-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    .pill-btn {
+      background: #334155;
+      color: #e2e8f0;
+      border: 1px solid transparent;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.78rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .pill-btn:hover {
+      background: #475569;
+      color: #fff;
+    }
+    .pill-btn.active {
+      background: #0284c7;
+      color: #fff;
+      border-color: #38bdf8;
+    }
+    .stats-bar {
+      max-width: 1400px;
+      margin: 20px auto 10px auto;
+      padding: 0 24px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+    }
+    .stat-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+    .stat-num {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: #fff;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .stat-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .main-container {
+      max-width: 1400px;
+      margin: 20px auto;
+      padding: 0 24px;
+    }
+    .results-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+    .event-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 18px 22px;
+      margin-bottom: 14px;
+      transition: transform 0.1s, border-color 0.15s;
+    }
+    .event-card:hover {
+      border-color: #475569;
+    }
+    .event-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .date-badge {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      color: #fff;
+      font-size: 0.92rem;
+    }
+    .badges-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .badge-theater { background: #0369a1; color: #e0f2fe; }
+    .badge-af { background: #374151; color: #f3f4f6; }
+    .badge-claims { background: #991b1b; color: #fee2e2; border: 1px solid #ef4444; }
+    .badge-cas { background: #92400e; color: #fef3c7; border: 1px solid #f59e0b; }
+    .badge-move { background: #065f46; color: #d1fae5; border: 1px solid #10b981; }
+    .badge-msn { background: #4c1d95; color: #ede9fe; }
+    .event-text {
+      font-size: 0.92rem;
+      color: #cbd5e1;
+      line-height: 1.6;
+      word-break: break-word;
+    }
+    .thor-banner {
+      margin-top: 10px;
+      padding: 8px 12px;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-left: 3px solid var(--primary);
+      border-radius: 4px;
+      font-size: 0.8rem;
+      color: #94a3b8;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .thor-banner strong { color: var(--primary); }
+    .load-more-btn {
+      display: block;
+      width: 100%;
+      max-width: 300px;
+      margin: 30px auto;
+      padding: 12px 20px;
+      background: #0284c7;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.15s;
+    }
+    .load-more-btn:hover { background: #0369a1; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-content">
+    <div class="title-row">
+      <div>
+        <h1>USAAF Worldwide Combat Chronology (1941–1945)</h1>
+        <div class="subtitle">Searchable operational combat diary, dogfight claims (D-P-D), casualties & base relocations • 8,742 events</div>
+      </div>
+      <div class="nav-links">
+        <a href="index.html">Global Bombing Map</a>
+        <a href="tunisia_bombing_imadas_interactive.html">Tunisia Imada Map</a>
+      </div>
+    </div>
+
+    <div class="filter-bar">
+      <input type="text" id="searchInput" placeholder="Search targets (e.g. Bizerte, Berlin), units, aviators, aircraft..." autocomplete="off">
+      <select id="theaterSelect">
+        <option value="">All Theaters</option>
+        <option value="ETO">European (ETO)</option>
+        <option value="MTO">Mediterranean (MTO)</option>
+        <option value="SWPA">SW Pacific (SWPA)</option>
+        <option value="POA">Pacific Ocean (POA)</option>
+        <option value="SOPAC">South Pacific (SOPAC)</option>
+        <option value="CBI">China-Burma-India (CBI)</option>
+        <option value="USASTAF">Strategic Air (20th AF)</option>
+        <option value="ATO">American / Alaska (ATO)</option>
+      </select>
+      <select id="airforceSelect">
+        <option value="">All Air Forces</option>
+        <option value="8th">8th Air Force</option>
+        <option value="9th">9th Air Force</option>
+        <option value="12th">12th Air Force</option>
+        <option value="15th">15th Air Force</option>
+        <option value="5th">5th Air Force</option>
+        <option value="7th">7th Air Force</option>
+        <option value="10th">10th Air Force</option>
+        <option value="11th">11th Air Force</option>
+        <option value="13th">13th Air Force</option>
+        <option value="14th">14th Air Force</option>
+        <option value="20th">20th Air Force</option>
+      </select>
+      <select id="yearSelect">
+        <option value="">All Years</option>
+        <option value="1941">1941</option>
+        <option value="1942">1942</option>
+        <option value="1943">1943</option>
+        <option value="1944">1944</option>
+        <option value="1945">1945</option>
+      </select>
+      <button class="pill-btn" id="resetBtn" style="height: 40px; padding: 0 16px;">Reset</button>
+    </div>
+
+    <div class="preset-pills">
+      <button class="pill-btn" data-preset="tunisia">🇹🇳 Tunisia Campaign (1942–43)</button>
+      <button class="pill-btn" data-preset="claims">💥 Top Dogfights (High Claims)</button>
+      <button class="pill-btn" data-preset="casualties">⚠️ Heavy Casualties (MIA/KIA)</button>
+      <button class="pill-btn" data-preset="movements">📍 Base Relocations</button>
+      <button class="pill-btn" data-preset="dday">⚓ D-Day (6 June 1944)</button>
+      <button class="pill-btn" data-preset="atomic">☢️ Atomic Raids (Aug 1945)</button>
+      <button class="pill-btn" data-preset="ploesti">🛢️ Ploesti Oil Raids</button>
+      <button class="pill-btn" data-preset="schweinfurt">⚙️ Schweinfurt-Regensburg</button>
+    </div>
+  </div>
+</header>
+
+<div class="stats-bar">
+  <div class="stat-card">
+    <div class="stat-num" id="statMatches">0</div>
+    <div class="stat-label">Matching Events</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num" id="statClaims">0</div>
+    <div class="stat-label">Destroyed Claims</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num" id="statCasualties">0</div>
+    <div class="stat-label">Casualties (KIA/WIA/MIA)</div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-num" id="statThorTons">0 t</div>
+    <div class="stat-label">THOR Bombs on Dates</div>
+  </div>
+</div>
+
+<div class="main-container">
+  <div class="results-meta">
+    <span id="resultsCount">Loading operational records...</span>
+  </div>
+  <div id="eventsStream"></div>
+  <button class="load-more-btn" id="loadMoreBtn" style="display: none;">Load More Events</button>
+</div>
+
+<script src="chronology_data.js"></script>
+<script>
+  let allData = window.CHRONOLOGY_DATA || [];
+  let filteredData = [];
+  let displayLimit = 40;
+
+  const searchInput = document.getElementById('searchInput');
+  const theaterSelect = document.getElementById('theaterSelect');
+  const airforceSelect = document.getElementById('airforceSelect');
+  const yearSelect = document.getElementById('yearSelect');
+  const resetBtn = document.getElementById('resetBtn');
+  const loadMoreBtn = document.getElementById('loadMoreBtn');
+  const eventsStream = document.getElementById('eventsStream');
+  const resultsCount = document.getElementById('resultsCount');
+
+  // Stats
+  const statMatches = document.getElementById('statMatches');
+  const statClaims = document.getElementById('statClaims');
+  const statCasualties = document.getElementById('statCasualties');
+  const statThorTons = document.getElementById('statThorTons');
+
+  function applyFilters() {
+    const q = searchInput.value.trim().toLowerCase();
+    const th = theaterSelect.value;
+    const af = airforceSelect.value.toLowerCase();
+    const yr = yearSelect.value;
+
+    filteredData = allData.filter(d => {
+      if (yr && !d.date.startsWith(yr)) return false;
+      if (th && d.theater_standard !== th) return false;
+      if (af && (!d.air_force || !d.air_force.toLowerCase().includes(af))) return false;
+      if (q) {
+        const full = (d.date + " " + (d.theater_standard || '') + " " + (d.air_force || '') + " " + (d.event_text || '')).toLowerCase();
+        if (!full.includes(q)) return false;
+      }
+      return true;
+    });
+
+    displayLimit = 40;
+    updateStats();
+    renderCards();
+  }
+
+  function updateStats() {
+    statMatches.textContent = filteredData.length.toLocaleString();
+    let totalClaims = 0;
+    let totalCas = 0;
+    let totalTons = 0;
+    const datesSeen = new Set();
+
+    filteredData.forEach(d => {
+      totalClaims += (d.claims_destroyed || 0);
+      totalCas += (d.kia_count || 0) + (d.wia_count || 0) + (d.mia_count || 0);
+      if (d.thor_total_tons && !datesSeen.has(d.date)) {
+        totalTons += d.thor_total_tons;
+        datesSeen.add(d.date);
+      }
+    });
+
+    statClaims.textContent = totalClaims.toLocaleString();
+    statCasualties.textContent = totalCas.toLocaleString();
+    statThorTons.textContent = totalTons.toLocaleString(undefined, { maximumFractionDigits: 0 }) + " t";
+    resultsCount.textContent = `Showing ${Math.min(displayLimit, filteredData.length).toLocaleString()} of ${filteredData.length.toLocaleString()} matching records`;
+  }
+
+  function renderCards() {
+    const subset = filteredData.slice(0, displayLimit);
+    if (subset.length === 0) {
+      eventsStream.innerHTML = '<div style="text-align: center; padding: 60px 0; color: #94a3b8;">No combat records match the selected filters.</div>';
+      loadMoreBtn.style.display = 'none';
+      return;
+    }
+
+    let html = '';
+    subset.forEach(d => {
+      const badges = [];
+      badges.push(`<span class="badge badge-theater">${d.theater_standard}</span>`);
+      if (d.air_force) badges.push(`<span class="badge badge-af">${d.air_force}</span>`);
+      if (d.mission_number) badges.push(`<span class="badge badge-msn">Mission ${d.mission_number}</span>`);
+
+      if (d.claims_destroyed || d.claims_probable || d.claims_damaged) {
+        badges.push(`<span class="badge badge-claims">💥 Claims: ${d.claims_destroyed || 0}-${d.claims_probable || 0}-${d.claims_damaged || 0}</span>`);
+      }
+      if (d.friendly_lost) {
+        badges.push(`<span class="badge badge-claims">✈️ Lost: ${d.friendly_lost}</span>`);
+      }
+      if (d.kia_count || d.wia_count || d.mia_count) {
+        let casStr = [];
+        if (d.kia_count) casStr.push(`${d.kia_count} KIA`);
+        if (d.wia_count) casStr.push(`${d.wia_count} WIA`);
+        if (d.mia_count) casStr.push(`${d.mia_count} MIA`);
+        badges.push(`<span class="badge badge-cas">⚠️ Casualties: ${casStr.join(', ')}</span>`);
+      }
+      if (d.unit_name) {
+        badges.push(`<span class="badge badge-move">📍 ${d.unit_name}</span>`);
+      }
+
+      let thorHtml = '';
+      if (d.thor_missions_count) {
+        thorHtml = `
+          <div class="thor-banner">
+            <div><strong>THOR WWII Link:</strong> ${d.thor_missions_count} bombing raids recorded (${d.thor_total_tons.toLocaleString()} tons) on this date.</div>
+            <a href="index.html" style="color: var(--primary); text-decoration: none; font-weight: 500;">View Map →</a>
+          </div>
+        `;
+      }
+
+      html += `
+        <div class="event-card">
+          <div class="event-header">
+            <div class="date-badge">${d.date}</div>
+            <div class="badges-row">${badges.join(' ')}</div>
+          </div>
+          <div class="event-text">${escapeHtml(d.event_text)}</div>
+          ${thorHtml}
+        </div>
+      `;
+    });
+
+    eventsStream.innerHTML = html;
+    loadMoreBtn.style.display = displayLimit < filteredData.length ? 'block' : 'none';
+  }
+
+  function escapeHtml(text) {
+    if (!text) return '';
+    return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  // Event Listeners
+  let debounceTimer;
+  searchInput.addEventListener('input', () => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(applyFilters, 250);
+  });
+  theaterSelect.addEventListener('change', applyFilters);
+  airforceSelect.addEventListener('change', applyFilters);
+  yearSelect.addEventListener('change', applyFilters);
+
+  resetBtn.addEventListener('click', () => {
+    searchInput.value = '';
+    theaterSelect.value = '';
+    airforceSelect.value = '';
+    yearSelect.value = '';
+    document.querySelectorAll('.preset-pills button').forEach(b => b.classList.remove('active'));
+    applyFilters();
+  });
+
+  loadMoreBtn.addEventListener('click', () => {
+    displayLimit += 40;
+    updateStats();
+    renderCards();
+  });
+
+  // Preset buttons
+  document.querySelectorAll('.preset-pills button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.preset-pills button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const p = btn.dataset.preset;
+      
+      searchInput.value = '';
+      theaterSelect.value = '';
+      airforceSelect.value = '';
+      yearSelect.value = '';
+
+      if (p === 'tunisia') {
+        theaterSelect.value = 'MTO';
+        searchInput.value = 'Tunisia';
+      } else if (p === 'claims') {
+        filteredData = allData.filter(d => (d.claims_destroyed || 0) >= 10);
+        displayLimit = 40;
+        updateStats();
+        renderCards();
+        return;
+      } else if (p === 'casualties') {
+        filteredData = allData.filter(d => (d.mia_count || 0) + (d.kia_count || 0) >= 20);
+        displayLimit = 40;
+        updateStats();
+        renderCards();
+        return;
+      } else if (p === 'movements') {
+        filteredData = allData.filter(d => !!d.unit_name);
+        displayLimit = 40;
+        updateStats();
+        renderCards();
+        return;
+      } else if (p === 'dday') {
+        searchInput.value = '1944-06-06';
+      } else if (p === 'atomic') {
+        searchInput.value = 'atomic';
+      } else if (p === 'ploesti') {
+        searchInput.value = 'Ploesti';
+      } else if (p === 'schweinfurt') {
+        searchInput.value = 'Schweinfurt';
+      }
+
+      applyFilters();
+    });
+  });
+
+  // Initial load
+  applyFilters();
+</script>
+
+</body>
+</html>

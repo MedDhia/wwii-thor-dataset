@@ -1,46 +1,54 @@
-# World War II Theater History of Operations (THOR) Dataset
+# World War II Aerial Operations & Combat Chronology Dataset
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/)
 [![R 4.0+](https://img.shields.io/badge/R-4.0+-276DC3.svg)](https://www.r-project.org/)
 [![Data Formats](https://img.shields.io/badge/formats-Parquet%20%7C%20SQLite%20%7C%20GeoJSON%20%7C%20CSV-green.svg)]()
 [![License: Public Domain](https://img.shields.io/badge/license-Public%20Domain-lightgrey.svg)](https://creativecommons.org/publicdomain/mark/1.0/)
 
-A comprehensive, curated, and query-optimized compilation of the complete United States Department of Defense / Air Force Research Institute (AFRI) **Theater History of Operations (THOR)** World War II aerial bombing operations database, featuring cross-theater analytics, interactive web GIS dashboards, and granular sector-level (*Imada* / عمادة) cartography of the Tunisia Campaign (1942–1943).
+A comprehensive, curated, and query-optimized compilation uniting two foundational historical archives of World War II aerial warfare:
+1. **The U.S. DoD / AFRI Theater History of Operations (THOR) Database**: Quantitative combat bombing missions (178,281 records), exact target coordinates, bomb tonnages, and granular Imada-level cartography of the Tunisia Campaign.
+2. **The USAAF Worldwide Combat Chronology (1941–1945)**: Official day-by-day operational combat logs (8,742 events), air-to-air dogfight scorecards (Destroyed-Probable-Damaged claims), personnel casualties (KIA/WIA/MIA), and order-of-battle airfield relocations.
 
 ---
 
-## 🎯 Overview & Scope
+## 🎯 Key Capabilities & Integrated Analytics
 
-- **Total Missions Recorded**: **178,281** combat bombing operations.
-- **Timeline**: September 1, 1939 – December 31, 1945 (complete WWII conflict duration).
-- **Theaters Covered**: 
-  - **European Theater (ETO)**: 95,827 missions | 3,154,320.6 tons
-  - **Mediterranean Theater (MTO)**: 30,532 missions | 591,589.1 tons
-  - **Pacific Theater (PTO)**: 36,192 missions | 438,268.4 tons
-  - **China-Burma-India (CBI)**: 12,404 missions | 53,260.0 tons
-  - **East Africa & Madagascar**: 168 missions | 6,622.6 tons
-- **Participating Allied Air Forces**: USAAF (8th, 9th, 12th, 15th, 5th, 13th, 20th Air Forces), Royal Air Force (RAF Bomber Command & Desert Air Force), Royal Australian Air Force (RAAF), Royal New Zealand Air Force (RNZAF), South African Air Force (SAAF).
-- **Geolocation Precision**: **169,429 missions (95.0%)** contain verified target coordinates; **2,555 missions** contain full takeoff-to-target flight trajectories.
+```text
+WWII AERIAL WARFARE CORPUS
+├── 1. QUANTITATIVE BOMBING TELEMETRY (THOR WWII)
+│   ├── 178,281 combat missions across all theaters (1939–1945)
+│   ├── 169,429 geolocated strike coordinates (95.0% precision)
+│   ├── 4.2 million tons of high explosive, incendiary, and fragmentation bombs
+│   └── Granular Imada (عمادة) spatial intersection for Tunisia (1,909 strikes across 2,084 sectors)
+│
+└── 2. OPERATIONAL COMBAT NARRATIVES (USAAF Combat Chronology)
+    ├── 1,329 calendar days (7 Dec 1941 – 2 Sep 1945)
+    ├── 8,742 structured operational narrative blocks across 16 Numbered Air Forces
+    ├── 799 aerial dogfight scorecards with standard Destroyed-Probable-Damaged (D-P-D) claims
+    ├── 436 casualty reports tracking 39,000+ MIA, 2,700+ KIA, and 5,000+ WIA
+    ├── 1,368 Order-of-Battle unit movements (airfield-to-airfield relocations)
+    └── Relational Crosswalk View bridging narrative history to quantitative strike data
+```
 
 ---
 
-## 🗺️ Tunisia Campaign & Imada-Level Cartography (1942–1943)
+## 🌐 Interactive Web Applications
 
-This repository includes a spatial intersection of **1,909 verified WWII bombing missions** across Tunisia's **2,084 Imada (عمادة / Sector)** administrative units.
+This repository includes three interactive web applications ready to open in any web browser without backend setup:
 
-### Minimalist Publication Maps (White Background)
+1. **[USAAF Combat Chronology Explorer (`docs/chronology_explorer.html`)](docs/chronology_explorer.html)**: Instant search and filtering across all 8,742 combat events, dogfight claims, casualties, unit base moves, and direct links to THOR bombing records.
+2. **[Global Bombing Dashboard (`docs/index.html`)](docs/index.html)**: Global dark-matter Leaflet map with live theater filtering (ETO, MTO, PTO, CBI, Tunisia) and yearly tonnage breakdown charts.
+3. **[Interactive Tunisia Imada Map (`docs/tunisia_bombing_imadas_interactive.html`)](docs/tunisia_bombing_imadas_interactive.html)**: Sector-level Leaflet map displaying all 2,084 Imada boundaries and 1,909 clickable bombing mission pins with complete ordnance details.
+
+---
+
+## 🗺️ Tunisia Campaign: Minimalist Publication Cartography
+
 The repository provides publication-ready 300 DPI PNGs and infinite-resolution vector PDFs in `data/gis/`:
 - **National Crimson Edition**: [`data/gis/tunisia_minimalist_national_crimson.pdf`](data/gis/tunisia_minimalist_national_crimson.pdf) & [PNG](data/gis/tunisia_minimalist_national_crimson.png)
-- **National Monochrome / Charcoal Edition**: [`data/gis/tunisia_minimalist_national_monochrome.pdf`](data/gis/tunisia_minimalist_national_monochrome.pdf) & [PNG](data/gis/tunisia_minimalist_national_monochrome.png)
+- **National Monochrome Edition**: [`data/gis/tunisia_minimalist_national_monochrome.pdf`](data/gis/tunisia_minimalist_national_monochrome.pdf) & [PNG](data/gis/tunisia_minimalist_national_monochrome.png)
 - **Northern Inset (Tunis, Bizerte, Cap Bon)**: [`data/gis/tunisia_minimalist_north.png`](data/gis/tunisia_minimalist_north.png)
 - **Central & Southern Inset (Kasserine, Gafsa, Sfax, Mareth)**: [`data/gis/tunisia_minimalist_south_central.png`](data/gis/tunisia_minimalist_south_central.png)
-
-### Top 5 Bombed Imadas in Tunisia
-1. **Ezzouarâa (Nefza, Béja)**: 84 strikes | **932.0 tons** (Axis road/rail choke point to Bizerte)
-2. **Teboulbou (Gabès Sud, Gabès)**: 82 strikes | **669.1 tons** (Mareth Line coastal approaches)
-3. **Sahloul (Sousse Jawhara, Sousse)**: 98 strikes | **616.2 tons** (Sousse port & rail marshalling yards)
-4. **Bou Derbala (El Amra, Sfax)**: 90 strikes | **584.0 tons** (Coastal rail line interdiction)
-5. **Enfidha (Enfidha, Sousse)**: 64 strikes | **362.5 tons** (Enfidha defensive perimeter)
 
 ---
 
@@ -52,106 +60,94 @@ wwii-thor-dataset/
 │   ├── raw/
 │   │   ├── THOR_WWII_DATA_CLEAN.csv            # Original AFRI mission records (35.9 MB)
 │   │   ├── THOR_WWII_AIRCRAFT_GLOSS.csv        # Aircraft reference glossary (52 models)
-│   │   └── THOR_WWII_WEAPON_GLOSS.csv          # Munitions & ordnance glossary (59 types)
+│   │   └── THOR_WWII_WEAPON_GLOSS.csv          # Munitions glossary (59 types)
 │   ├── processed/
 │   │   ├── thor_wwii_enriched.parquet          # Fast columnar format (6.57 MB, 78 attributes)
-│   │   ├── thor_wwii.sqlite.gz                 # Compressed SQLite database with indexes (14.0 MB)
-│   │   └── thor_wwii_clean.csv.gz              # Compressed CSV archive (5.88 MB)
+│   │   ├── thor_wwii.sqlite.gz                 # Compressed THOR database (14.0 MB)
+│   │   ├── thor_wwii_clean.csv.gz              # Compressed CSV archive (5.88 MB)
+│   │   ├── usaaf_combat_chronology.sqlite      # Normalized relational database (7.6 MB)
+│   │   ├── usaaf_combat_chronology.sqlite.gz   # Compressed SQLite archive (1.9 MB)
+│   │   ├── usaaf_chronology_events.parquet     # Columnar events dataset (1.8 MB)
+│   │   ├── usaaf_chronology_days.csv.gz        # Calendar summary (1,329 days)
+│   │   ├── usaaf_chronology_events.csv.gz      # Operational events (8,742 rows)
+│   │   ├── usaaf_chronology_missions.csv.gz    # Sortie details (2,565 rows)
+│   │   ├── usaaf_chronology_combat.csv.gz      # Aerial claims & losses (799 rows)
+│   │   ├── usaaf_chronology_casualties.csv.gz  # KIA, WIA, MIA tallies (436 rows)
+│   │   └── usaaf_chronology_movements.csv.gz   # Unit base relocations (1,368 rows)
 │   └── gis/
 │       ├── tunisia_imadas/                     # Shapefiles: 2,084 sectors & 24 governorates
-│       ├── targets_aggregated.geojson          # 10,261 target clusters with tons & statistics
-│       ├── flight_paths.geojson                # 2,555 takeoff-to-target mission linestrings
-│       ├── tunisia_minimalist_national_crimson.png
-│       ├── tunisia_minimalist_national_crimson.pdf
-│       ├── tunisia_minimalist_national_monochrome.png
-│       ├── tunisia_minimalist_national_monochrome.pdf
-│       ├── tunisia_minimalist_north.png
-│       └── tunisia_minimalist_south_central.png
+│       ├── tunisia_wwii_combat_chronology.csv  # 267 operational narratives for Tunisia
+│       ├── targets_aggregated.geojson          # 10,261 target clusters with statistics
+│       ├── flight_paths.geojson                # 2,555 mission trajectories
+│       └── *.png / *.pdf                       # Minimalist white-background maps
 ├── docs/
-│   ├── index.html                              # Interactive Leaflet web dashboard & charts
-│   ├── tunisia_bombing_imadas_interactive.html # Interactive Tunisia sector map with popups
+│   ├── chronology_explorer.html                # Interactive USAAF Chronology web explorer
+│   ├── chronology_data.js                      # Instant client-side search data
+│   ├── index.html                              # Global WWII bombing operations dashboard
+│   ├── tunisia_bombing_imadas_interactive.html # Interactive Tunisia sector map
 │   ├── wwii_thor_full_analysis.html            # Compiled R Markdown analytical report
-│   └── SCHEMA_DICTIONARY.md                    # Data dictionary of all 78 columns
+│   ├── SCHEMA_DICTIONARY.md                    # THOR database codebook (78 variables)
+│   └── CHRONOLOGY_DATA_DICTIONARY.md           # Combat Chronology schema & data dictionary
 ├── notebooks/
 │   ├── wwii_thor_full_analysis.ipynb           # Python Jupyter notebook (Folium maps & EDA)
 │   └── wwii_thor_full_analysis.Rmd             # R Markdown source notebook
 ├── scripts/
-│   ├── fetch_data.py                           # Raw file downloader from GitHub / AFRI
-│   ├── build_thor_dataset.py                   # Enrichment, cleanup, and SQLite/Parquet export
-│   ├── analyze_all.py                          # Cross-theater statistics and HTML builders
-│   ├── generate_tunisia_maps.R                 # Full cartographic & Leaflet generation script
+│   ├── build_thor_dataset.py                   # Ingestion & export for THOR
+│   ├── build_chronology_dataset.py             # Complete parser & builder for USAAF Chronology
+│   ├── verify_chronology_dataset.py            # Automated test suite for Chronology
 │   ├── generate_minimalist_maps.R              # Publication-grade minimalist white maps
-│   └── verify_dataset.py                       # Automated test & benchmark suite
+│   ├── generate_tunisia_maps.R                 # Full cartographic & Leaflet generation script
+│   └── verify_dataset.py                       # Automated test suite for THOR
 ├── requirements.txt
 └── README.md
 ```
 
 ---
 
-## 🚀 Quickstart & Usage
+## 🚀 Quickstart & Queries
 
-### 1. Setup & Dependencies
-```bash
-git clone https://github.com/MedDhia/wwii-thor-dataset.git
-cd wwii-thor-dataset
-
-# Python
-pip install -r requirements.txt
-
-# Decompress SQLite database (optional, needed for SQLite queries)
-gunzip -k data/processed/thor_wwii.sqlite.gz
-```
-
-### 2. Python (Pandas / PyArrow)
+### 1. Python (Relational & Analytical Queries)
 ```python
+import sqlite3
 import pandas as pd
 
-# Load the complete 178k mission dataset in milliseconds
-df = pd.read_parquet("data/processed/thor_wwii_enriched.parquet")
+# Connect to the normalized USAAF Chronology database
+conn = sqlite3.connect("data/processed/usaaf_combat_chronology.sqlite")
 
-# Filter for B-17 missions over Germany in 1944
-b17_1944 = df[
-    (df["aircraft_full_name"] == "B-17 Flying Fortress") &
-    (df["TGT_COUNTRY"] == "GERMANY") &
-    (df["year"] == 1944)
+# Query the crosswalk view: Daily operational synergy on D-Day
+dday = pd.read_sql_query("""
+    SELECT * FROM v_daily_operational_crosswalk 
+    WHERE date = '1944-06-06';
+""", conn)
+print(dday)
+
+# Query air-to-air dogfight claims against the Luftwaffe in 1944
+dogfights = pd.read_sql_query("""
+    SELECT date, air_force, claims_destroyed, claims_probable, claims_damaged, friendly_lost, context_snippet
+    FROM chronology_aerial_combat
+    WHERE claims_destroyed >= 20 AND date LIKE '1944%'
+    ORDER BY claims_destroyed DESC
+    LIMIT 5;
+""", conn)
+print(dogfights)
+```
+
+### 2. Loading Parquet Events
+```python
+# Lightning-fast read of 8,742 narrative events
+events = pd.read_parquet("data/processed/usaaf_chronology_events.parquet")
+
+# Filter for Tunisia missions in March 1943 (Mareth Line battle)
+mareth = events[
+    (events["sub_region"] == "Tunisia") & 
+    (events["date"].str.startswith("1943-03"))
 ]
-print(f"B-17 raids over Germany in 1944: {len(b17_1944):,}")
-print(f"Total bomb weight: {b17_1944['total_tons_clean'].sum():,.1f} tons")
-```
-
-### 3. R / Tidyverse
-```r
-library(sf)
-library(dplyr)
-library(ggplot2)
-
-# Load Tunisia sectors and mission shapefiles
-sectors <- st_read("data/gis/tunisia_imadas/TN_sectors.shp")
-# Run publication map generator
-source("scripts/generate_minimalist_maps.R")
-```
-
-### 4. SQLite Queries
-```sql
-sqlite3 data/processed/thor_wwii.sqlite
-
--- Top 5 bombed target cities in Italy
-SELECT target_location, mission_count, total_tons, first_mission, last_mission
-FROM targets_summary
-WHERE target_country = 'ITALY'
-ORDER BY total_tons DESC
-LIMIT 5;
+print(f"Mareth campaign operational events: {len(mareth)}")
 ```
 
 ---
 
-## 🌐 Interactive Dashboards
-
-1. **Global WWII Bombing Operations**: Open `docs/index.html` in any browser to explore global raids with theater filters (ETO, MTO, PTO, CBI, Tunisia) and yearly tonnage breakdowns.
-2. **Interactive Tunisia Sector Map**: Open `docs/tunisia_bombing_imadas_interactive.html` to click individual bomb strikes (aircraft, tons, units) and inspect sector-level aggregates.
-3. **Comprehensive Report**: Open `docs/wwii_thor_full_analysis.html` for in-depth statistical tables, theater comparisons, and weapon distributions.
-
----
-
-## 📜 Attribution & License
-The dataset originates from the **Theater History of Operations (THOR)** project by Lt. Col. Jenns Robertson and the United States Air Force Research Institute (AFRI), originally released via Data.mil and the U.S. Department of Defense. Public domain / US Government Work. Administrative boundaries for Tunisia courtesy of `jmgclark/tunisia_shapefiles`.
+## 📜 Attribution & Sources
+- **THOR Dataset**: Lt. Col. Jenns Robertson and the United States Air Force Research Institute (AFRI), Data.mil / U.S. Department of Defense.
+- **USAAF Combat Chronology**: Kit C. Carter and Robert Mueller, *The Army Air Forces in World War II: Combat Chronology, 1941–1945*, Office of Air Force History / AFHRA.
+- **Administrative GIS Boundaries**: Official 2,084 sector shapefiles courtesy of `jmgclark/tunisia_shapefiles`.
