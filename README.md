@@ -42,13 +42,33 @@ This repository includes three interactive web applications ready to open in any
 
 ---
 
-## 🗺️ Tunisia Campaign: Minimalist Publication Cartography
+## 🗺️ Minimalist Publication Cartographic Atlas (`maps/`)
 
-The repository provides publication-ready 300 DPI PNGs and infinite-resolution vector PDFs in `data/gis/`:
-- **National Crimson Edition**: [`data/gis/tunisia_minimalist_national_crimson.pdf`](data/gis/tunisia_minimalist_national_crimson.pdf) & [PNG](data/gis/tunisia_minimalist_national_crimson.png)
-- **National Monochrome Edition**: [`data/gis/tunisia_minimalist_national_monochrome.pdf`](data/gis/tunisia_minimalist_national_monochrome.pdf) & [PNG](data/gis/tunisia_minimalist_national_monochrome.png)
-- **Northern Inset (Tunis, Bizerte, Cap Bon)**: [`data/gis/tunisia_minimalist_north.png`](data/gis/tunisia_minimalist_north.png)
-- **Central & Southern Inset (Kasserine, Gafsa, Sfax, Mareth)**: [`data/gis/tunisia_minimalist_south_central.png`](data/gis/tunisia_minimalist_south_central.png)
+All maps are designed with minimalist aesthetic principles (high contrast, pure white background `#FFFFFF`, delicate administrative boundaries, and strike markers sized proportionally to ordnance tonnage). Available in both **300 DPI high-resolution PNG** and **infinite-resolution vector PDF**:
+
+### 1. Global & Theater Strategic Maps
+- **WWII Global Bombing Footprint** (170,000+ strikes): [`maps/wwii_global_bombing_footprint.pdf`](maps/wwii_global_bombing_footprint.pdf) • [PNG](maps/wwii_global_bombing_footprint.png)
+- **European Theater (ETO) Strategic Bombing** (3.15M tons, Germany/France): [`maps/wwii_eto_strategic_bombing.pdf`](maps/wwii_eto_strategic_bombing.pdf) • [PNG](maps/wwii_eto_strategic_bombing.png)
+- **Mediterranean Theater (MTO) Campaign** (Italy, Balkans, Ploesti, North Africa): [`maps/wwii_mto_mediterranean_campaign.pdf`](maps/wwii_mto_mediterranean_campaign.pdf) • [PNG](maps/wwii_mto_mediterranean_campaign.png)
+- **Pacific War & CBI Theater (PTO / CBI)** (Island-hopping & Japan B-29 raids): [`maps/wwii_pto_cbi_pacific_war.pdf`](maps/wwii_pto_cbi_pacific_war.pdf) • [PNG](maps/wwii_pto_cbi_pacific_war.png)
+- **Strategic Bombing of the Third Reich (Germany & Austria)**: [`maps/wwii_germany_strategic_bombing_closeup.pdf`](maps/wwii_germany_strategic_bombing_closeup.pdf) • [PNG](maps/wwii_germany_strategic_bombing_closeup.png)
+
+### 2. Tunisia Campaign: Temporal Progression & Imada Analytics
+- **4-Phase Campaign Progression Grid** (Composite 2×2 timeline): [`maps/tunisia_campaign_phases_grid.pdf`](maps/tunisia_campaign_phases_grid.pdf) • [PNG](maps/tunisia_campaign_phases_grid.png)
+  - **Phase 1: Torch & Airfield Neutralization (Nov–Dec 1942)**: [`maps/tunisia_phase1_torch_airfields.pdf`](maps/tunisia_phase1_torch_airfields.pdf) • [PNG](maps/tunisia_phase1_torch_airfields.png)
+  - **Phase 2: Battle of Kasserine Pass (Jan–Feb 1943)**: [`maps/tunisia_phase2_kasserine_pass.pdf`](maps/tunisia_phase2_kasserine_pass.pdf) • [PNG](maps/tunisia_phase2_kasserine_pass.png)
+  - **Phase 3: Mareth Line & Coastal Breakthrough (Mar–Apr 1943)**: [`maps/tunisia_phase3_mareth_line.pdf`](maps/tunisia_phase3_mareth_line.pdf) • [PNG](maps/tunisia_phase3_mareth_line.png)
+  - **Phase 4: Operation Vulcan & Axis Surrender (May 1943)**: [`maps/tunisia_phase4_vulcan_surrender.pdf`](maps/tunisia_phase4_vulcan_surrender.pdf) • [PNG](maps/tunisia_phase4_vulcan_surrender.png)
+- **Imada-Level Bombing Density Choropleth** (2,084 sectors): [`maps/tunisia_imada_bombing_density.pdf`](maps/tunisia_imada_bombing_density.pdf) • [PNG](maps/tunisia_imada_bombing_density.png)
+- **Target Functional Taxonomy Map** (Airfields, Ports, Rail, Fortifications): [`maps/tunisia_target_types_distribution.pdf`](maps/tunisia_target_types_distribution.pdf) • [PNG](maps/tunisia_target_types_distribution.png)
+- **National Crimson Edition**: [`maps/tunisia_minimalist_national_crimson.pdf`](maps/tunisia_minimalist_national_crimson.pdf) • [PNG](maps/tunisia_minimalist_national_crimson.png)
+- **National Monochrome Edition**: [`maps/tunisia_minimalist_national_monochrome.pdf`](maps/tunisia_minimalist_national_monochrome.pdf) • [PNG](maps/tunisia_minimalist_national_monochrome.png)
+
+### 3. Micro-Regional Tactical Battle Closeups (Imada Level)
+- **Greater Tunis & Bizerte Naval Complex**: [`maps/tunisia_tactical_tunis_bizerte.pdf`](maps/tunisia_tactical_tunis_bizerte.pdf) • [PNG](maps/tunisia_tactical_tunis_bizerte.png)
+- **The Mareth Line & Gulf of Gabès**: [`maps/tunisia_tactical_mareth_gabes.pdf`](maps/tunisia_tactical_mareth_gabes.pdf) • [PNG](maps/tunisia_tactical_mareth_gabes.png)
+- **Kasserine Pass, Sbeitla & Central Front**: [`maps/tunisia_tactical_kasserine_gafsa.pdf`](maps/tunisia_tactical_kasserine_gafsa.pdf) • [PNG](maps/tunisia_tactical_kasserine_gafsa.png)
+- **Eastern Sahel Ports & Coastal Rail Line**: [`maps/tunisia_tactical_sahel_ports.pdf`](maps/tunisia_tactical_sahel_ports.pdf) • [PNG](maps/tunisia_tactical_sahel_ports.png)
 
 ---
 
@@ -56,6 +76,25 @@ The repository provides publication-ready 300 DPI PNGs and infinite-resolution v
 
 ```text
 wwii-thor-dataset/
+├── maps/                                       # 20 publication-grade maps (PDF & PNG)
+│   ├── wwii_global_bombing_footprint.*         # Global Allied bombing footprint
+│   ├── wwii_eto_strategic_bombing.*            # ETO European strategic bombing
+│   ├── wwii_mto_mediterranean_campaign.*       # MTO Mediterranean air war
+│   ├── wwii_pto_cbi_pacific_war.*              # PTO & CBI Pacific campaign
+│   ├── wwii_germany_strategic_bombing_closeup.*# Strategic bombing of Third Reich
+│   ├── tunisia_campaign_phases_grid.*          # 4-Phase composite campaign grid
+│   ├── tunisia_phase1_torch_airfields.*        # Phase 1 standalone map
+│   ├── tunisia_phase2_kasserine_pass.*         # Phase 2 standalone map
+│   ├── tunisia_phase3_mareth_line.*            # Phase 3 standalone map
+│   ├── tunisia_phase4_vulcan_surrender.*       # Phase 4 standalone map
+│   ├── tunisia_imada_bombing_density.*         # Imada 2,084-sector density choropleth
+│   ├── tunisia_target_types_distribution.*     # Target taxonomy classification
+│   ├── tunisia_tactical_tunis_bizerte.*        # Tunis & Bizerte tactical closeup
+│   ├── tunisia_tactical_mareth_gabes.*         # Mareth Line tactical closeup
+│   ├── tunisia_tactical_kasserine_gafsa.*      # Kasserine Pass tactical closeup
+│   ├── tunisia_tactical_sahel_ports.*          # Sahel ports & rail closeup
+│   ├── tunisia_minimalist_national_crimson.*   # Full national crimson edition
+│   └── tunisia_minimalist_national_monochrome.*# Full national monochrome edition
 ├── data/
 │   ├── raw/
 │   │   ├── THOR_WWII_DATA_CLEAN.csv            # Original AFRI mission records (35.9 MB)
@@ -76,10 +115,10 @@ wwii-thor-dataset/
 │   │   └── usaaf_chronology_movements.csv.gz   # Unit base relocations (1,368 rows)
 │   └── gis/
 │       ├── tunisia_imadas/                     # Shapefiles: 2,084 sectors & 24 governorates
+│       ├── tunisia_bombing_by_imada.csv        # Imada-level bombing statistics
 │       ├── tunisia_wwii_combat_chronology.csv  # 267 operational narratives for Tunisia
 │       ├── targets_aggregated.geojson          # 10,261 target clusters with statistics
-│       ├── flight_paths.geojson                # 2,555 mission trajectories
-│       └── *.png / *.pdf                       # Minimalist white-background maps
+│       └── flight_paths.geojson                # 2,555 mission trajectories
 ├── docs/
 │   ├── chronology_explorer.html                # Interactive USAAF Chronology web explorer
 │   ├── chronology_data.js                      # Instant client-side search data
@@ -95,8 +134,9 @@ wwii-thor-dataset/
 │   ├── build_thor_dataset.py                   # Ingestion & export for THOR
 │   ├── build_chronology_dataset.py             # Complete parser & builder for USAAF Chronology
 │   ├── verify_chronology_dataset.py            # Automated test suite for Chronology
-│   ├── generate_minimalist_maps.R              # Publication-grade minimalist white maps
-│   ├── generate_tunisia_maps.R                 # Full cartographic & Leaflet generation script
+│   ├── generate_minimalist_maps.R              # Original minimalist white maps
+│   ├── generate_tunisia_expanded_maps.R        # 11 expanded Tunisia campaign & tactical maps
+│   ├── generate_theater_global_maps.R          # 5 Global & Theater strategic maps
 │   └── verify_dataset.py                       # Automated test suite for THOR
 ├── requirements.txt
 └── README.md
@@ -143,6 +183,15 @@ mareth = events[
     (events["date"].str.startswith("1943-03"))
 ]
 print(f"Mareth campaign operational events: {len(mareth)}")
+```
+
+### 3. Regenerating All Publication Maps
+```bash
+# Generate all 11 Tunisia campaign and tactical maps
+Rscript scripts/generate_tunisia_expanded_maps.R
+
+# Generate all 5 Global and Theater strategic maps
+Rscript scripts/generate_theater_global_maps.R
 ```
 
 ---
