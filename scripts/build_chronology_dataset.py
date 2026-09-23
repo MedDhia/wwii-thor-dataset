@@ -663,6 +663,12 @@ def export_explorer_js(conn_path=None):
                      "FROM chronology_aerial_combat", conn)
     ca = pd.read_sql("SELECT event_id, kia_count, wia_count, mia_count FROM chronology_casualties", conn)
     mv = pd.read_sql("SELECT event_id, unit_name, from_location, to_location FROM chronology_unit_movements", conn)
+    # One explorer row per event: combine an event's unit moves so its claims and
+    # casualties are not repeated (and double-counted) once per move.
+    mv = (mv.groupby('event_id', sort=False)
+            .agg(lambda s: "; ".join(x for x in s if x))
+            .replace("", None)
+            .reset_index())
     tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     out = (e.merge(cb, on='event_id', how='left')
             .merge(ca, on='event_id', how='left')
