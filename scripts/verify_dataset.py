@@ -36,6 +36,15 @@ def test_parquet():
     years = sorted(df["year"].dropna().unique())
     print(f"Covered years: {years}")
     assert years == [1939, 1940, 1941, 1942, 1943, 1944, 1945]
+
+    # Tonnage outliers: flagged, excluded from total_tons_clean, raw values kept
+    assert "tonnage_outlier_reason" in df.columns
+    flagged = df[df["tonnage_outlier_reason"].notna()]
+    print(f"Tonnage outliers flagged: {sorted(flagged['WWII_ID'].tolist())}")
+    assert sorted(flagged["WWII_ID"].tolist()) == [50254, 149508, 150325]
+    assert flagged["total_tons_clean"].isna().all(), "Flagged outliers must have no total_tons_clean"
+    assert (flagged["TOTAL_TONS"] > 0).all(), "Raw TOTAL_TONS must be kept for flagged outliers"
+    assert df.loc[df["tonnage_outlier_reason"].isna(), "total_tons_clean"].notna().all()
     print("Parquet verification PASSED!\n")
 
 def test_sqlite():

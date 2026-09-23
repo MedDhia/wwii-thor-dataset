@@ -18,7 +18,7 @@ WWII AERIAL WARFARE CORPUS
 ├── 1. QUANTITATIVE BOMBING TELEMETRY (THOR WWII)
 │   ├── 178,281 attack records across all theaters (3 Sep 1939 – 31 Dec 1945)
 │   ├── 169,429 records (95.0%) with valid target coordinates
-│   ├── 4.30 million tons recorded (3.48M HE, 554k incendiary, 203k fragmentation; see caveats)
+│   ├── 4.26 million tons (3.44M HE, 554k incendiary, 203k fragmentation), excluding 3 flagged outliers
 │   └── Imada (عمادة) spatial join for Tunisia: 1,909 geolocated strikes, 1,750 inside 90 of the 2,084 sectors
 │
 └── 2. OPERATIONAL COMBAT NARRATIVES (USAAF Combat Chronology)
@@ -101,9 +101,9 @@ wwii-thor-dataset/
 │   │   ├── THOR_WWII_AIRCRAFT_GLOSS.csv        # Aircraft reference glossary (52 models)
 │   │   └── THOR_WWII_WEAPON_GLOSS.csv          # Munitions glossary (59 types)
 │   ├── processed/
-│   │   ├── thor_wwii_enriched.parquet          # Fast columnar format (6.57 MB, 78 attributes)
-│   │   ├── thor_wwii.sqlite.gz                 # Compressed THOR database (14.0 MB)
-│   │   ├── thor_wwii_clean.csv.gz              # Compressed CSV archive (5.88 MB)
+│   │   ├── thor_wwii_enriched.parquet          # Fast columnar format (6.64 MB, 79 attributes)
+│   │   ├── thor_wwii.sqlite.gz                 # Compressed THOR database (14.1 MB)
+│   │   ├── thor_wwii_clean.csv.gz              # Compressed CSV archive (5.89 MB)
 │   │   ├── usaaf_combat_chronology.sqlite      # Normalized relational database (7.5 MB)
 │   │   ├── usaaf_combat_chronology.sqlite.gz   # Compressed SQLite archive (1.9 MB)
 │   │   ├── usaaf_chronology_events.parquet     # Columnar events dataset (1.8 MB)
@@ -125,7 +125,7 @@ wwii-thor-dataset/
 │   ├── index.html                              # Global WWII bombing operations dashboard
 │   ├── tunisia_bombing_imadas_interactive.html # Interactive Tunisia sector map
 │   ├── wwii_thor_full_analysis.html            # Compiled R Markdown analytical report
-│   ├── SCHEMA_DICTIONARY.md                    # THOR database codebook (78 variables)
+│   ├── SCHEMA_DICTIONARY.md                    # THOR database codebook (79 variables)
 │   └── CHRONOLOGY_DATA_DICTIONARY.md           # Combat Chronology schema & data dictionary
 ├── notebooks/
 │   ├── wwii_thor_full_analysis.ipynb           # Python Jupyter notebook (Folium maps & EDA)
@@ -209,7 +209,8 @@ Rscript scripts/generate_theater_global_maps.R
 
 ## ⚠️ Data Caveats
 - **THOR records are not missions.** Each row is a target-level attack entry; one raid can span several rows.
-- **Tonnage outliers are kept.** `total_tons_clean` is the greater of the recorded total and HE + IC + Frag, which raises 345 records. It includes the Hiroshima and Nagasaki records (15,000 t and 20,000 t, TNT-equivalent yield rather than bombs dropped) and a 4,750 t record for 6 aircraft at Kassala (17 Aug 1940).
+- **Three tonnage outliers are excluded from all totals.** The Hiroshima and Nagasaki records carry 15,000 t and 20,000 t, the bombs' TNT-equivalent yield rather than bomb weight, and a Kassala record (17 Aug 1940) carries 4,750 t for 6 aircraft. They keep their raw THOR values but have no `total_tons_clean`, their HE / IC / Frag tons are left out of summed figures, and `tonnage_outlier_reason` says why (39,750 t in all).
+- **Other implausible tonnages remain.** `total_tons_clean` is the greater of the recorded total and HE + IC + Frag, which raises 345 records. About 400 further records claim more than 12 t per attacking aircraft (e.g. 975 t for one PV-1 Ventura); they are not flagged.
 - **Tunisia phases** cover Nov 1942 – May 1943 only; 14 Tunisia records dated outside that window are left out of the phase maps. 159 geolocated Tunisia strikes fall outside every Imada polygon: offshore targets plus records whose coordinates are mis-coded in THOR (e.g. Fondouk, La Sebala).
 - **Chronology fields are regex extractions** from narrative text. They index the narrative; they are not verified tallies. 31% of events have no recognised theater header (`OTHER`). See [`docs/CHRONOLOGY_DATA_DICTIONARY.md`](docs/CHRONOLOGY_DATA_DICTIONARY.md) for the corrections applied (re-dated 1943 entries, a duplicated day, page footers).
 - **Rebuilding the chronology from scratch** needs a local mirror of the source pages, which is not included. `scripts/apply_chronology_corrections.py` re-applies the corrections to the committed database.
