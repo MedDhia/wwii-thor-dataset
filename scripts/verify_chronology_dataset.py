@@ -2,7 +2,7 @@
 """
 verify_chronology_dataset.py
 
-Verification and benchmark suite for the USAAF Worldwide Combat Chronology (1941–1945) dataset.
+Verification suite for the USAAF Combat Chronology (1941–1945) dataset.
 Checks database consistency, relational schemas, cross-referencing views, and Parquet/CSV exports.
 """
 
@@ -44,7 +44,27 @@ def verify_all():
         counts[tbl] = cur.fetchone()[0]
         print(f"  • {tbl}: {counts[tbl]:,} records")
         
-    assert counts['chronology_days'] == 1329, f"Expected 1,329 days, got {counts['chronology_days']}"
+    # Day-level consistency: one row per date, printed weekday matches the calendar,
+    # and events_count adds up to the events table.
+    df_days_db = pd.read_sql("SELECT date, day_of_week, events_count FROM chronology_days", conn)
+    dup_dates = df_days_db['date'][df_days_db['date'].duplicated()].tolist()
+    assert not dup_dates, f"Duplicate day entries: {dup_dates}"
+    bad_wd = df_days_db[pd.to_datetime(df_days_db['date']).dt.day_name() != df_days_db['day_of_week']]
+    assert bad_wd.empty, f"Weekday does not match date: {bad_wd['date'].tolist()}"
+    assert df_days_db['events_count'].sum() == counts['chronology_events'], "events_count does not match chronology_events"
+    assert counts['chronology_days'] >= 1300, f"Expected 1,300+ days, got {counts['chronology_days']}"
+
+    # Event-level consistency: IDs embed the event date; no page footers parsed as events;
+    # every child record points at an existing event with the same date.
+    cur.execute("SELECT COUNT(*) FROM chronology_events WHERE substr(event_id, 5, 8) != replace(date, '-', '')")
+    assert cur.fetchone()[0] == 0, "event_id date tag does not match event date"
+    cur.execute("SELECT COUNT(*) FROM chronology_events WHERE event_text LIKE 'SOURCES:%' "
+                "OR event_text LIKE 'Jack McKillop%' OR event_text LIKE '-----%'")
+    assert cur.fetchone()[0] == 0, "Page footer text found in chronology_events"
+    for child in ['chronology_missions', 'chronology_aerial_combat', 'chronology_casualties', 'chronology_unit_movements']:
+        cur.execute(f"SELECT COUNT(*) FROM {child} c LEFT JOIN chronology_events e ON c.event_id = e.event_id "
+                    f"WHERE e.event_id IS NULL OR c.date != e.date")
+        assert cur.fetchone()[0] == 0, f"{child} has orphaned or mis-dated rows"
     assert counts['chronology_events'] >= 8500, f"Expected 8,500+ events, got {counts['chronology_events']}"
     assert counts['chronology_missions'] >= 2000, f"Expected 2,000+ missions, got {counts['chronology_missions']}"
     assert counts['chronology_aerial_combat'] >= 700, f"Expected 700+ combat logs, got {counts['chronology_aerial_combat']}"
@@ -84,7 +104,7 @@ def verify_all():
     
     df_days = pd.read_csv(DAYS_CSV_GZ)
     print(f"Days CSV: {len(df_days):,} days from {df_days['date'].min()} to {df_days['date'].max()}.")
-    assert len(df_days) == 1329
+    assert len(df_days) == counts['chronology_days']
     
     print("\n==================================================")
     print("4. VERIFYING TUNISIA SUBSET EXPORT")

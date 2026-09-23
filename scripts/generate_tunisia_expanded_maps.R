@@ -14,7 +14,8 @@ suppressPackageStartupMessages({
   library(patchwork)
 })
 
-base_dir <- "/Users/mohameddhiahammami/.gemini/antigravity/scratch/wwii-thor-dataset"
+script_arg <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+base_dir <- if (length(script_arg)) normalizePath(file.path(dirname(sub("^--file=", "", script_arg)), "..")) else getwd()
 gis_dir <- file.path(base_dir, "data", "gis")
 maps_dir <- file.path(base_dir, "maps")
 dir.create(maps_dir, showWarnings = FALSE, recursive = TRUE)
@@ -55,13 +56,24 @@ bombs_df <- bombs_df %>%
       grepl("TROOP|GUN|TANK|FORT|POSITION|DEFENSE|BUNKER", combo, ignore.case = TRUE) ~ "Troops & Fortifications",
       TRUE ~ "Urban Centers & Tactical Targets"
     ),
+    # Records dated before Nov 1942 or after May 1943 fall outside every phase.
     phase_id = case_when(
+      mission_date_iso < "1942-11-01" ~ NA_character_,
       mission_date_iso < "1943-01-01" ~ "Phase 1: Torch & Buildup (Nov-Dec 1942)",
       mission_date_iso < "1943-03-01" ~ "Phase 2: Kasserine Pass (Jan-Feb 1943)",
       mission_date_iso < "1943-05-01" ~ "Phase 3: Mareth Line (Mar-Apr 1943)",
-      TRUE                            ~ "Phase 4: Vulcan & Surrender (May 1943)"
+      mission_date_iso < "1943-06-01" ~ "Phase 4: Vulcan & Surrender (May 1943)",
+      TRUE                            ~ NA_character_
     )
   )
+
+cat(sprintf("Records outside the Nov 1942 - May 1943 phases: %d\n", sum(is.na(bombs_df$phase_id))))
+
+# "N strikes (T t)" summary computed from the data for a set of records
+strike_summary <- function(df) {
+  sprintf("%s strikes (%s t)", comma(nrow(df)), comma(round(sum(df$total_tons_clean, na.rm = TRUE))))
+}
+phase_summary <- function(phase_str) strike_summary(filter(bombs_df, phase_id == phase_str))
 
 bombs_sf <- st_as_sf(bombs_df, coords = c("target_lon", "target_lat"), crs = 4326, remove = FALSE)
 
@@ -131,19 +143,19 @@ make_phase_plot <- function(phase_str, title_label, subtitle_label, point_col = 
 
 p1 <- make_phase_plot("Phase 1: Torch & Buildup (Nov-Dec 1942)", 
                       "Phase 1: Torch & Buildup (Nov–Dec 1942)", 
-                      "129 missions (876 t) • Neutralizing coastal airfields & ports")
+                      paste(phase_summary("Phase 1: Torch & Buildup (Nov-Dec 1942)"), "• Neutralizing coastal airfields & ports"))
 
 p2 <- make_phase_plot("Phase 2: Kasserine Pass (Jan-Feb 1943)", 
                       "Phase 2: Kasserine Pass & Central Steppes (Jan–Feb 1943)", 
-                      "460 missions (2,255 t) • Tactical support during Rommel's offensive")
+                      paste(phase_summary("Phase 2: Kasserine Pass (Jan-Feb 1943)"), "• Tactical support during Rommel's offensive"))
 
 p3 <- make_phase_plot("Phase 3: Mareth Line (Mar-Apr 1943)", 
                       "Phase 3: Mareth Line & Coastal Breakthrough (Mar–Apr 1943)", 
-                      "1,037 missions (6,868 t) • Massive interdiction & 8th Army breakthrough")
+                      paste(phase_summary("Phase 3: Mareth Line (Mar-Apr 1943)"), "• Massive interdiction & 8th Army breakthrough"))
 
 p4 <- make_phase_plot("Phase 4: Vulcan & Surrender (May 1943)", 
                       "Phase 4: Operation Vulcan & Final Surrender (May 1943)", 
-                      "283 missions (2,050 t) • Final encirclement at Tunis, Bizerte & Cap Bon")
+                      paste(phase_summary("Phase 4: Vulcan & Surrender (May 1943)"), "• Final encirclement at Tunis, Bizerte & Cap Bon"))
 
 p_grid <- (p1 | p2) / (p3 | p4) +
   plot_annotation(
@@ -217,28 +229,28 @@ make_standalone_phase <- function(phase_str, title_label, subtitle_label, out_pr
 make_standalone_phase(
   "Phase 1: Torch & Buildup (Nov-Dec 1942)",
   "Tunisia Campaign Phase 1: Torch & Airfield Neutralization (Nov–Dec 1942)",
-  "129 missions (876 tons) • Early Allied strikes against Axis airfields and coastal ports",
+  paste(phase_summary("Phase 1: Torch & Buildup (Nov-Dec 1942)"), "• Early Allied strikes against Axis airfields and coastal ports"),
   "tunisia_phase1_torch_airfields"
 )
 
 make_standalone_phase(
   "Phase 2: Kasserine Pass (Jan-Feb 1943)",
   "Tunisia Campaign Phase 2: Battle of Kasserine Pass (Jan–Feb 1943)",
-  "460 missions (2,255 tons) • Close air support and tactical interdiction during Axis winter counter-offensives",
+  paste(phase_summary("Phase 2: Kasserine Pass (Jan-Feb 1943)"), "• Close air support and tactical interdiction during Axis winter counter-offensives"),
   "tunisia_phase2_kasserine_pass"
 )
 
 make_standalone_phase(
   "Phase 3: Mareth Line (Mar-Apr 1943)",
   "Tunisia Campaign Phase 3: Mareth Line & Coastal Breakthrough (Mar–Apr 1943)",
-  "1,037 missions (6,868 tons) • Intense bombardment supporting 8th Army breakthrough and retreat north",
+  paste(phase_summary("Phase 3: Mareth Line (Mar-Apr 1943)"), "• Intense bombardment supporting 8th Army breakthrough and retreat north"),
   "tunisia_phase3_mareth_line"
 )
 
 make_standalone_phase(
   "Phase 4: Vulcan & Surrender (May 1943)",
   "Tunisia Campaign Phase 4: Operation Vulcan & Axis Surrender (May 1943)",
-  "283 missions (2,050 tons) • Final destruction of Axis bridgehead in Tunis, Bizerte, and Cap Bon",
+  paste(phase_summary("Phase 4: Vulcan & Surrender (May 1943)"), "• Final destruction of Axis bridgehead in Tunis, Bizerte, and Cap Bon"),
   "tunisia_phase4_vulcan_surrender"
 )
 
@@ -248,7 +260,7 @@ make_standalone_phase(
 cat("\n[6/11] Rendering Imada-Level Bombing Density Choropleth...\n")
 
 imada_csv_path <- file.path(gis_dir, "tunisia_bombing_by_imada.csv")
-imada_stats <- read.csv(imada_csv_path)
+imada_stats <- read.csv(imada_csv_path, fileEncoding = "UTF-8")
 
 imadas_density <- imadas %>%
   left_join(imada_stats, by = c("sec_uid" = "imada_uid"))
@@ -292,7 +304,7 @@ p_density <- ggplot() +
   labs(
     title = "WWII Bombing Density per Imada (عمادة) Sector in Tunisia",
     subtitle = "Cumulative ordnance tonnage per administrative sector across 2,084 Imadas",
-    caption = "Source: USAF WWII THOR Database • Spatial aggregation across 90 bombed Imadas"
+    caption = sprintf("Source: USAF WWII THOR Database • Spatial aggregation across %d bombed Imadas", sum(imada_stats$bomb_strikes > 0))
   ) +
   theme_minimalist_white(title_size = 13, subtitle_size = 9) +
   theme(
@@ -344,7 +356,12 @@ p_targets <- ggplot() +
                    text_col = "#64748b", line_col = "#64748b", text_cex = 0.65) +
   labs(
     title = "Target Functional Taxonomy: WWII Aerial Bombing in Tunisia",
-    subtitle = "Airfields (420 missions), Harbors (249), Rail/Roads (295), Troops/Forts (440), Urban/Tactical (505)",
+    subtitle = {
+      n_cat <- table(bombs_df$target_category)
+      sprintf("Airfields (%d strikes), Harbors (%d), Rail/Roads (%d), Troops/Forts (%d), Urban/Tactical (%d)",
+              n_cat[["Airfields & Airdromes"]], n_cat[["Ports, Harbors & Shipping"]], n_cat[["Rail, Roads & Logistics"]],
+              n_cat[["Troops & Fortifications"]], n_cat[["Urban Centers & Tactical Targets"]])
+    },
     caption = "Source: USAF WWII THOR Database • Classified by target types and industrial codes"
   ) +
   theme_minimalist_white(title_size = 13, subtitle_size = 8.8) +
@@ -370,6 +387,8 @@ cat("Saved target taxonomy map.\n")
 cat("\n[8-11/11] Rendering Tactical Battlefield Micro-Regional Closeups...\n")
 
 make_tactical_closeup <- function(xlims, ylims, title_str, subtitle_str, out_prefix, cities_in_view) {
+  in_view <- filter(bombs_df, between(target_lon, xlims[1], xlims[2]), between(target_lat, ylims[1], ylims[2]))
+  subtitle_str <- paste(strike_summary(in_view), "•", subtitle_str)
   p <- ggplot() +
     geom_sf(data = imadas, fill = "#ffffff", color = "#cbd5e1", linewidth = 0.15) +
     geom_sf(data = govs, fill = NA, color = "#475569", linewidth = 0.5) +
@@ -423,7 +442,7 @@ make_tactical_closeup(
   xlims = c(9.3, 10.6), 
   ylims = c(36.4, 37.4),
   title_str = "Tactical Closeup: Greater Tunis & Bizerte Naval Complex",
-  subtitle_str = "High-density bombing of Tunis ports, Lake of Tunis, Sidi Ahmed airfield, and Bizerte arsenal",
+  subtitle_str = "Airfields, gun positions and towns around Bizerte, Mateur, Medjez el Bab and the Tunis plain",
   out_prefix = "tunisia_tactical_tunis_bizerte",
   cities_in_view = tunis_bizerte_cities
 )
@@ -439,7 +458,7 @@ make_tactical_closeup(
   xlims = c(9.5, 10.7), 
   ylims = c(33.2, 34.15),
   title_str = "Tactical Closeup: The Mareth Line & Gulf of Gabès",
-  subtitle_str = "Bombed fortifications, Wadi Zigzaou, Teboulbou supply dumps, and the El Hamma turning movement",
+  subtitle_str = "Airfields, roads and troop targets at Gabès, Zarat, Mareth, El Hamma and Medenine",
   out_prefix = "tunisia_tactical_mareth_gabes",
   cities_in_view = mareth_cities
 )
@@ -454,8 +473,8 @@ kasserine_cities <- data.frame(
 make_tactical_closeup(
   xlims = c(8.2, 9.8), 
   ylims = c(34.2, 35.6),
-  title_str = "Tactical Closeup: Kasserine Pass, Sbeitla & Central Front",
-  subtitle_str = "Strikes on Axis advance columns, choke points, and Thélepte / Fériana forward airstrips",
+  title_str = "Tactical Closeup: Kasserine, Gafsa & Central Front",
+  subtitle_str = "Troops, vehicles and roads at Kasserine, Faïd Pass, El Guettar, Sened, Gafsa and Maknassy",
   out_prefix = "tunisia_tactical_kasserine_gafsa",
   cities_in_view = kasserine_cities
 )
@@ -471,7 +490,7 @@ make_tactical_closeup(
   xlims = c(10.1, 11.2), 
   ylims = c(34.5, 36.3),
   title_str = "Tactical Closeup: Eastern Sahel Ports & Rail Corridors",
-  subtitle_str = "Harbor interdictions and marshalling yard bombardments at Sfax, Sousse, and Enfidha",
+  subtitle_str = "Airfields, harbors, vehicles and rail targets at Sousse, Sfax, La Fauconnerie, Enfidaville and El Djem",
   out_prefix = "tunisia_tactical_sahel_ports",
   cities_in_view = sahel_cities
 )

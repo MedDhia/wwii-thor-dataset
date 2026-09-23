@@ -2,11 +2,11 @@
 """
 build_chronology_dataset.py
 
-Constructs the comprehensive USAAF Worldwide Combat Chronology (1941–1945) dataset
-from official USAF historical daily reports.
+Constructs the USAAF Combat Chronology (1941–1945) dataset by regex-parsing the
+day-by-day narrative text (see Source below).
 
 Extracts:
-1. chronology_days (all 1,329 calendar days of WWII aerial combat)
+1. chronology_days (one row per dated day entry in the source)
 2. chronology_events (operational narratives categorized by theater and air force)
 3. chronology_missions (structured missions with sortie dispatched/attacking counts & targets)
 4. chronology_aerial_combat (dogfight scorecards with D-P-D claims & aircraft attrition)
@@ -18,6 +18,17 @@ Outputs:
 - Parquet: data/processed/usaaf_chronology_events.parquet
 - CSVs: data/processed/usaaf_chronology_*.csv.gz
 - Tunisia: data/gis/tunisia_wwii_combat_chronology.csv
+- Explorer: docs/chronology_data.js
+
+Source: Jack McKillop's day-by-day USAAF combat operations chronology (based on
+Kit C. Carter and Robert Mueller, "The Army Air Forces in World War II: Combat
+Chronology, 1941-1945"), as published at aircrewremembered.com. Point
+USAAF_CHRONOLOGY_HTML_DIR (or the first CLI argument) at a local mirror of
+https://aircrewremembered.com/USAAFCombatOperations/.
+
+The committed database has been corrected in place with
+scripts/apply_chronology_corrections.py, which applies the same
+apply_corrections() step defined here.
 """
 
 import os
@@ -28,14 +39,19 @@ import sqlite3
 import gzip
 import shutil
 from datetime import datetime
+import sys
 import pandas as pd
 import numpy as np
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RAW_HTML_DIR = "/Users/mohameddhiahammami/Downloads/us.sitesucker.mac.sitesucker/aircrewremembered.com/USAAFCombatOperations"
+RAW_HTML_DIR = os.environ.get(
+    "USAAF_CHRONOLOGY_HTML_DIR",
+    "/Users/mohameddhiahammami/Downloads/us.sitesucker.mac.sitesucker/aircrewremembered.com/USAAFCombatOperations"
+)
 PROCESSED_DIR = os.path.join(BASE_DIR, "data", "processed")
 GIS_DIR = os.path.join(BASE_DIR, "data", "gis")
-MAPSTN_DIR = "/Users/mohameddhiahammami/.gemini/antigravity/scratch/MapsTN"
+DOCS_DIR = os.path.join(BASE_DIR, "docs")
+MAPSTN_DIR = os.environ.get("MAPSTN_DIR", "/Users/mohameddhiahammami/.gemini/antigravity/scratch/MapsTN")
 
 os.makedirs(PROCESSED_DIR, exist_ok=True)
 os.makedirs(GIS_DIR, exist_ok=True)
@@ -122,6 +138,34 @@ MISSION_NUM_RE = re.compile(r'\bMission\s+(\d+)\b', re.I)
 SORTIE_OF_RE = re.compile(r'(\d+)\s+of\s+(\d+)\s+([A-Za-z0-9-]+(?:\'s|s)?)\s+(?:bomb|hit|strike|attack|target|drop)\s+([^;\.\n]+)', re.I)
 SORTIE_DIRECT_RE = re.compile(r'(?:^|\b)(\d+)\s+([A-Za-z0-9-]+(?:\'s|s)?)\s+(?:bomb|hit|strike|attack|drop)\s+([^;\.\n]+)', re.I)
 
+# Page furniture repeated at the end of each monthly page (source list, compiler's
+# signature box, separator rules). These are not operational events.
+FOOTER_RE = re.compile(r'^(?:SOURCES:|Jack McKillop\b|-{5,}|\|)')
+
+WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+
+def weekday_of(iso_date):
+    return WEEKDAYS[datetime.strptime(iso_date, "%Y-%m-%d").weekday()]
+
+def repair_year(year, month, day, day_name, candidate_years):
+    """Return a corrected year when the printed weekday only fits a candidate year.
+
+    The source has year typos in some day headers (e.g. "SATURDAY, 2 JANUARY 1942"
+    inside the January 1943 page). The printed weekday is used to confirm the fix;
+    headers whose weekday fits no candidate are left as printed (weekday typo).
+    """
+    def fits(y):
+        try:
+            return WEEKDAYS[datetime(y, month, day).weekday()].upper() == day_name.upper()
+        except ValueError:
+            return False
+    if fits(year):
+        return year
+    for y in candidate_years:
+        if y and y != year and fits(y):
+            return y
+    return year
+
 def standardize_theater(raw_name):
     u = raw_name.upper()
     if 'EUROPEAN' in u or 'ETO' in u:
@@ -171,12 +215,14 @@ def parse_corpus():
         for d_i, dm in enumerate(date_matches):
             day_name, day_num, month_name, year_str = dm.groups()
             mo = MONTH_MAP.get(month_name.upper(), 1)
-            # Correct any historical OCR/transcription typos in year (e.g. 1993 -> 1943)
+            # Correct transcription typos in the year (e.g. 1993 -> 1943, or 1942
+            # printed inside the 1943 page) using the page's year and the weekday.
             parsed_year = int(year_str)
-            if parsed_year > 1945:
-                fname_yr = re.search(r'\.(\d{2})\.html', fpath)
-                if fname_yr:
-                    parsed_year = int("19" + fname_yr.group(1))
+            fname_yr = re.search(r'\.(\d{2})\.html', fpath)
+            file_year = int("19" + fname_yr.group(1)) if fname_yr else None
+            if parsed_year > 1945 and file_year:
+                parsed_year = file_year
+            parsed_year = repair_year(parsed_year, mo, int(day_num), day_name, [file_year])
             iso_date = f"{parsed_year:04d}-{mo:02d}-{int(day_num):02d}"
             
             start_pos = dm.end()
@@ -203,7 +249,7 @@ def parse_corpus():
             def flush_block(lines_buf, theater_hdr, cur_af, cur_cmd):
                 nonlocal event_idx, mission_idx, combat_idx, casualty_idx, movement_idx, day_events_count
                 raw_block = " ".join([l.strip() for l in lines_buf if l.strip()])
-                if len(raw_block) < 25:
+                if len(raw_block) < 25 or FOOTER_RE.match(raw_block):
                     return
                 
                 event_idx += 1
@@ -261,7 +307,8 @@ def parse_corpus():
                     'has_claims': int(has_claims),
                     'has_losses': int(has_losses),
                     'has_casualties': int(has_cas),
-                    'event_text': raw_block
+                    'event_text': raw_block,
+                    '_day_seq': len(days_list)
                 })
                 
                 # 1. Extract Aerial Combat Claims & Attrition
@@ -470,6 +517,40 @@ def parse_corpus():
         pd.DataFrame(movements_list)
     )
 
+def apply_corrections(df_days, df_events, df_missions, df_combat, df_casualties, df_movements):
+    """Clean the parsed tables. df_events must carry `_day_seq` (row position of its day in df_days).
+
+    1. Drop page-footer blocks (source list, signature box) that were parsed as events.
+    2. Drop repeated day blocks: when a date appears more than once, keep the last copy
+       (the source repeats 28 Feb 1945, the second copy with typos fixed).
+    3. Set day_of_week from the calendar date (the source has a few weekday typos)
+       and recompute events_count / theaters_active.
+    """
+    df_days = df_days.reset_index(drop=True).copy()
+    df_events = df_events.copy()
+
+    drop_events = set(df_events.loc[df_events['event_text'].str.match(FOOTER_RE), 'event_id'])
+
+    last_seq = df_days.reset_index().groupby('date')['index'].max()
+    dup_seqs = set(df_days.index[df_days.index != df_days['date'].map(last_seq)])
+    drop_events |= set(df_events.loc[df_events['_day_seq'].isin(dup_seqs), 'event_id'])
+    df_days = df_days.drop(index=list(dup_seqs))
+
+    df_events = df_events[~df_events['event_id'].isin(drop_events)]
+    children = [t[~t['event_id'].isin(drop_events)] if len(t) else t
+                for t in (df_missions, df_combat, df_casualties, df_movements)]
+
+    df_days['day_of_week'] = df_days['date'].map(weekday_of)
+    per_day = df_events.groupby('_day_seq')
+    df_days['events_count'] = per_day.size().reindex(df_days.index, fill_value=0).astype(int).values
+    df_days['theaters_active'] = (per_day['theater_standard']
+                                  .agg(lambda s: ", ".join(sorted(set(s))))
+                                  .reindex(df_days.index, fill_value="").values)
+
+    print(f"Corrections: dropped {len(drop_events):,} footer/duplicate events and "
+          f"{len(dup_seqs)} repeated day block(s).")
+    return (df_days.reset_index(drop=True), df_events.drop(columns=['_day_seq']).reset_index(drop=True), *children)
+
 def build_database(df_days, df_events, df_missions, df_combat, df_casualties, df_movements):
     db_path = os.path.join(PROCESSED_DIR, "usaaf_combat_chronology.sqlite")
     print(f"\nBuilding SQLite database: {db_path}...")
@@ -573,6 +654,36 @@ def build_database(df_days, df_events, df_missions, df_combat, df_casualties, df
     df_casualties.to_csv(os.path.join(PROCESSED_DIR, "usaaf_chronology_casualties.csv.gz"), compression="gzip", index=False)
     df_movements.to_csv(os.path.join(PROCESSED_DIR, "usaaf_chronology_movements.csv.gz"), compression="gzip", index=False)
 
+def export_explorer_js(conn_path=None):
+    """Write docs/chronology_data.js for docs/chronology_explorer.html."""
+    conn = sqlite3.connect(conn_path or os.path.join(PROCESSED_DIR, "usaaf_combat_chronology.sqlite"))
+    e = pd.read_sql("SELECT event_id, date, theater_standard, air_force, sub_region, has_claims, has_losses, "
+                    "has_casualties, mission_number, aircraft_models, event_text FROM chronology_events", conn)
+    cb = pd.read_sql("SELECT event_id, claims_destroyed, claims_probable, claims_damaged, friendly_lost "
+                     "FROM chronology_aerial_combat", conn)
+    ca = pd.read_sql("SELECT event_id, kia_count, wia_count, mia_count FROM chronology_casualties", conn)
+    mv = pd.read_sql("SELECT event_id, unit_name, from_location, to_location FROM chronology_unit_movements", conn)
+    tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'")}
+    out = (e.merge(cb, on='event_id', how='left')
+            .merge(ca, on='event_id', how='left')
+            .merge(mv, on='event_id', how='left'))
+    if 'thor_daily_summary' in tables:
+        t = pd.read_sql("SELECT date, thor_missions_count, thor_total_tons FROM thor_daily_summary", conn)
+        out = out.merge(t, on='date', how='left')
+    conn.close()
+    out = out.sort_values('date', kind='stable')
+    count_cols = ['claims_destroyed', 'claims_probable', 'claims_damaged', 'friendly_lost',
+                  'kia_count', 'wia_count', 'mia_count', 'thor_missions_count']
+    for col in count_cols:
+        if col in out:
+            out[col] = out[col].astype('Int64')
+    out = out.astype(object).where(out.notna(), None)
+    records = out.to_dict(orient='records')
+    js_path = os.path.join(DOCS_DIR, "chronology_data.js")
+    with open(js_path, "w", encoding="utf-8") as f:
+        f.write("window.CHRONOLOGY_DATA = " + json.dumps(records, ensure_ascii=False) + ";\n")
+    print(f"Saved: {js_path} ({len(records):,} rows)")
+
 def export_tunisia_subset(df_events, df_missions, df_movements):
     print("\nFiltering and exporting Tunisia Campaign (1942–1943) subset...")
     tunisia_events = df_events[
@@ -595,7 +706,10 @@ def export_tunisia_subset(df_events, df_missions, df_movements):
 
 if __name__ == "__main__":
     t0 = datetime.now()
-    df_days, df_events, df_missions, df_combat, df_casualties, df_movements = parse_corpus()
+    if len(sys.argv) > 1:
+        RAW_HTML_DIR = sys.argv[1]
+    df_days, df_events, df_missions, df_combat, df_casualties, df_movements = apply_corrections(*parse_corpus())
     build_database(df_days, df_events, df_missions, df_combat, df_casualties, df_movements)
     export_tunisia_subset(df_events, df_missions, df_movements)
+    export_explorer_js()
     print(f"\nAll pipelines completed successfully in {(datetime.now() - t0).total_seconds():.1f}s.")

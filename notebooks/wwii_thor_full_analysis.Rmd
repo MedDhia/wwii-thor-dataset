@@ -20,7 +20,7 @@ library(leaflet)
 
 ## 1. Database Connection
 
-We connect directly to the pre-indexed SQLite database containing the complete 178,281 bombing missions.
+We connect directly to the pre-indexed SQLite database containing the complete 178,281 THOR attack records.
 
 ```{r}
 con <- dbConnect(RSQLite::SQLite(), "../data/processed/thor_wwii.sqlite")

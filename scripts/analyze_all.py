@@ -281,14 +281,14 @@ def generate_interactive_dashboard(conn):
       <h1>World War II Theater History of Operations (THOR)</h1>
       <p style="font-size: 12px; color: #94a3b8; margin-top: 2px;">Interactive Global Bombing Analysis & Geolocation Explorer (1939–1945)</p>
     </div>
-    <div class="badge">178,281 Missions Verified</div>
+    <div class="badge">178,281 THOR Attack Records</div>
   </header>
 
   <div class="stats-bar">
     <div class="card">
       <div class="title">Total Ordnance Dropped</div>
       <div class="val">4,299,897 t</div>
-      <div class="sub">HE: 3.53M t | Incendiary: 694k t</div>
+      <div class="sub">HE: 3.48M t | Incendiary: 554k t | Frag: 203k t</div>
     </div>
     <div class="card">
       <div class="title">European Theater (ETO)</div>
@@ -501,7 +501,7 @@ def generate_jupyter_notebook():
                 "# World War II Aerial Bombing Operations (THOR Database)\n",
                 "### Comprehensive Cross-Theater Data Exploration & Geospatial Analysis\n",
                 "\n",
-                "This notebook performs an exhaustive investigation of the complete **178,281 mission operations** recorded during World War II in the United States Department of Defense / Air Force Research Institute (AFRI) **Theater History of Operations (THOR)** database.\n",
+                "This notebook performs an exhaustive investigation of the complete **178,281 attack records** recorded during World War II in the United States Department of Defense / Air Force Research Institute (AFRI) **Theater History of Operations (THOR)** database.\n",
                 "\n",
                 "**Key Analyses Included:**\n",
                 "1. **Theaters of War**: European Theater (ETO), Mediterranean (MTO), Pacific (PTO), China-Burma-India (CBI).\n",
@@ -708,7 +708,7 @@ library(leaflet)
 
 ## 1. Database Connection
 
-We connect directly to the pre-indexed SQLite database containing the complete 178,281 bombing missions.
+We connect directly to the pre-indexed SQLite database containing the complete 178,281 THOR attack records.
 
 ```{r}
 con <- dbConnect(RSQLite::SQLite(), "../data/processed/thor_wwii.sqlite")
