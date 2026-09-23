@@ -38,7 +38,7 @@ This repository includes three interactive web applications ready to open in any
 
 1. **[USAAF Combat Chronology Explorer (`docs/chronology_explorer.html`)](docs/chronology_explorer.html)**: Instant search and filtering across all 8,585 combat events, dogfight claims, casualties, unit base moves, and direct links to THOR bombing records.
 2. **[Global Bombing Dashboard (`docs/index.html`)](docs/index.html)**: Global dark-matter Leaflet map with live theater filtering (ETO, MTO, PTO, CBI, Tunisia) and yearly tonnage breakdown charts.
-3. **[Interactive Tunisia Imada Map (`docs/tunisia_bombing_imadas_interactive.html`)](docs/tunisia_bombing_imadas_interactive.html)**: Sector-level Leaflet map displaying all 2,084 Imada boundaries and 1,909 clickable bombing strike pins with ordnance details. (Its "Governorate Borders" layer was built from the 350-municipality layer, now `TN_municipalities.shp`, and has not been regenerated.)
+3. **[Interactive Tunisia Imada Map (`docs/tunisia_bombing_imadas_interactive.html`)](docs/tunisia_bombing_imadas_interactive.html)**: Sector-level Leaflet map displaying all 2,084 Imada boundaries and 1,909 clickable bombing strike pins with ordnance details.
 
 ---
 

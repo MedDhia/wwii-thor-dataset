@@ -1,7 +1,8 @@
 #!/usr/bin/env Rscript
 # generate_tunisia_maps.R - High-resolution cartographic maps of WWII bombing missions in Tunisia at Imada level
 
-Sys.setenv(RSTUDIO_PANDOC = "/Applications/quarto/bin/tools/aarch64")
+# Use the bundled Quarto pandoc on macOS when present; otherwise pandoc on PATH.
+if (dir.exists("/Applications/quarto/bin/tools/aarch64")) Sys.setenv(RSTUDIO_PANDOC = "/Applications/quarto/bin/tools/aarch64")
 
 suppressPackageStartupMessages({
   library(sf)
@@ -56,7 +57,7 @@ bombs_df <- dbGetQuery(con, "
   WHERE UPPER(TGT_COUNTRY) = 'TUNISIA' AND has_valid_target_coords = 1
 ")
 dbDisconnect(con)
-cat(sprintf("Loaded %d bombing missions in Tunisia.\n", nrow(bombs_df)))
+cat(sprintf("Loaded %d THOR records in Tunisia.\n", nrow(bombs_df)))
 
 bombs_sf <- st_as_sf(bombs_df, coords = c("target_lon", "target_lat"), crs = 4326, remove = FALSE)
 
@@ -309,8 +310,9 @@ bombs_web <- bombs_df %>%
       "<b>Bomb Weight:</b> <span style='color:#ea580c;font-weight:bold;'>", round(total_tons_clean, 2), " tons</span><br>",
       "<b>HE Munitions:</b> ", round(TONS_OF_HE, 2), " t | <b>Frag:</b> ", round(TONS_OF_FRAG, 2), " t<br>",
       "<b>Aircraft:</b> ", ifelse(is.na(aircraft_full_name), "Unknown", aircraft_full_name), "<br>",
-      "<b>Air Force / Nation:</b> ", country_flying_mission_clean, " (", ifelse(is.na(NAF), "12 AF", NAF), ")<br>",
-      "<b>Mission ID:</b> ", WWII_ID,
+      "<b>Air Force / Nation:</b> ", ifelse(is.na(country_flying_mission_clean), "Unknown", country_flying_mission_clean),
+      " (", ifelse(is.na(NAF), "air force not recorded", NAF), ")<br>",
+      "<b>THOR record ID:</b> ", WWII_ID,
       "</div>"
     )
   )
