@@ -26,6 +26,10 @@ world_countries <- ne_countries(scale = "medium", returnclass = "sf")
 cat("Connecting to SQLite database...\n")
 con <- dbConnect(RSQLite::SQLite(), sqlite_path)
 
+# Labels computed from the plotted records (one row per THOR attack record)
+year_range <- function(df) paste0(min(df$year, na.rm = TRUE), "–", max(df$year, na.rm = TRUE))
+mtons <- function(df) sprintf("%.2fM", sum(df$total_tons_clean, na.rm = TRUE) / 1e6)
+
 # Common minimalist theme
 theme_theater_white <- function(title_size = 14, subtitle_size = 9.5) {
   theme_void() +
@@ -47,11 +51,11 @@ theme_theater_white <- function(title_size = 14, subtitle_size = 9.5) {
 # ==============================================================================
 cat("\n[1/5] Querying Global WWII Bombing Missions...\n")
 global_df <- dbGetQuery(con, "
-  SELECT target_lat, target_lon, total_tons_clean, THEATER
+  SELECT target_lat, target_lon, total_tons_clean, THEATER, year
   FROM missions
   WHERE has_valid_target_coords = 1
 ")
-cat(sprintf("Loaded %d global missions with valid coordinates.\n", nrow(global_df)))
+cat(sprintf("Loaded %d global records with valid coordinates.\n", nrow(global_df)))
 
 p_global <- ggplot() +
   geom_sf(data = world_countries, fill = "#ffffff", color = "#cbd5e1", linewidth = 0.15) +
@@ -70,9 +74,9 @@ p_global <- ggplot() +
   ) +
   coord_sf(xlim = c(-140, 160), ylim = c(-25, 68), expand = FALSE) +
   labs(
-    title = "Global Footprint of Allied Aerial Bombardment in WWII (1939–1945)",
-    subtitle = "170,000+ combat missions across European, Mediterranean, African, Asian, and Pacific Theaters",
-    caption = "Source: USAF Theater History of Operations (THOR) Database • 2.76M Tons of Ordnance"
+    title = sprintf("Global Footprint of Allied Aerial Bombardment in WWII (%s)", year_range(global_df)),
+    subtitle = sprintf("%s geolocated attack records across European, Mediterranean, African, Asian, and Pacific Theaters", comma(nrow(global_df))),
+    caption = sprintf("Source: USAF Theater History of Operations (THOR) Database • %s Tons of Ordnance", mtons(global_df))
   ) +
   theme_theater_white(title_size = 15, subtitle_size = 10) +
   theme(
@@ -91,11 +95,11 @@ cat("Saved global bombing footprint map.\n")
 # ==============================================================================
 cat("\n[2/5] Querying European Theater (ETO) Missions...\n")
 eto_df <- dbGetQuery(con, "
-  SELECT target_lat, target_lon, total_tons_clean
+  SELECT target_lat, target_lon, total_tons_clean, year
   FROM missions
   WHERE THEATER = 'ETO' AND has_valid_target_coords = 1
 ")
-cat(sprintf("Loaded %d ETO missions.\n", nrow(eto_df)))
+cat(sprintf("Loaded %d ETO records.\n", nrow(eto_df)))
 
 eto_cities <- data.frame(
   name = c("London", "Paris", "Berlin", "Hamburg", "Munich", "Cologne", "Essen", "Dresden", "Frankfurt", "Vienna", "Brussels", "Amsterdam"),
@@ -126,8 +130,8 @@ p_eto <- ggplot() +
   annotation_scale(location = "bl", width_hint = 0.2, style = "ticks",
                    text_col = "#64748b", line_col = "#64748b") +
   labs(
-    title = "The Strategic Bombing Campaign in Europe (ETO, 1942–1945)",
-    subtitle = "Combined Bomber Offensive (USAAF 8th/9th Air Forces & RAF) • Over 3.15 Million Tons Dropped",
+    title = sprintf("The Strategic Bombing Campaign in Europe (ETO, %s)", year_range(eto_df)),
+    subtitle = sprintf("USAAF and RAF bombing • %s tons across %s geolocated records", mtons(eto_df), comma(nrow(eto_df))),
     caption = "Source: USAF WWII THOR Database • Germany (1.99M t), France (783k t), Austria (149k t)"
   ) +
   theme_theater_white(title_size = 14, subtitle_size = 9.5) +
@@ -147,11 +151,11 @@ cat("Saved ETO strategic bombing map.\n")
 # ==============================================================================
 cat("\n[3/5] Querying Mediterranean Theater (MTO) Missions...\n")
 mto_df <- dbGetQuery(con, "
-  SELECT target_lat, target_lon, total_tons_clean
+  SELECT target_lat, target_lon, total_tons_clean, year
   FROM missions
   WHERE THEATER = 'MTO' AND has_valid_target_coords = 1
 ")
-cat(sprintf("Loaded %d MTO missions.\n", nrow(mto_df)))
+cat(sprintf("Loaded %d MTO records.\n", nrow(mto_df)))
 
 mto_cities <- data.frame(
   name = c("Rome", "Naples", "Foggia", "Palermo", "Tunis", "Tripoli", "Athens", "Belgrade", "Ploesti", "Budapest"),
@@ -182,7 +186,7 @@ p_mto <- ggplot() +
   annotation_scale(location = "bl", width_hint = 0.2, style = "ticks",
                    text_col = "#64748b", line_col = "#64748b") +
   labs(
-    title = "The Mediterranean Air Campaign (MTO, 1942–1945)",
+    title = sprintf("The Mediterranean Air Campaign (MTO, %s)", year_range(mto_df)),
     subtitle = "North Africa (Tunisia, Libya), Italian Peninsula, Balkans & Ploesti Oil Fields (12th & 15th Air Forces)",
     caption = "Source: USAF WWII THOR Database • Italy (409k t), Romania/Ploesti (43k t), Hungary (39k t), Yugoslavia (36k t)"
   ) +
@@ -203,11 +207,11 @@ cat("Saved MTO Mediterranean map.\n")
 # ==============================================================================
 cat("\n[4/5] Querying Pacific & CBI Missions...\n")
 pto_df <- dbGetQuery(con, "
-  SELECT target_lat, target_lon, total_tons_clean
+  SELECT target_lat, target_lon, total_tons_clean, year
   FROM missions
   WHERE THEATER IN ('PTO', 'CBI') AND has_valid_target_coords = 1
 ")
-cat(sprintf("Loaded %d PTO/CBI missions.\n", nrow(pto_df)))
+cat(sprintf("Loaded %d PTO/CBI records.\n", nrow(pto_df)))
 
 pto_cities <- data.frame(
   name = c("Tokyo", "Osaka", "Hiroshima", "Nagasaki", "Manila", "Rangoon", "Calcutta", "Kunming", "Rabaul", "Saipan"),
@@ -238,7 +242,7 @@ p_pto <- ggplot() +
   annotation_scale(location = "bl", width_hint = 0.2, style = "ticks",
                    text_col = "#64748b", line_col = "#64748b") +
   labs(
-    title = "The Pacific War & China-Burma-India Theater (PTO / CBI, 1942–1945)",
+    title = sprintf("The Pacific War & China-Burma-India Theater (PTO / CBI, %s)", year_range(pto_df)),
     subtitle = "Island-hopping campaign, Burma Road, Philippines liberation, and the B-29 strategic offensive on Japan",
     caption = "Source: USAF WWII THOR Database • Japan (188k t), Philippines (63k t), New Guinea (47k t), Burma (37k t)"
   ) +
@@ -259,11 +263,11 @@ cat("Saved PTO/CBI Pacific map.\n")
 # ==============================================================================
 cat("\n[5/5] Querying Germany & Austria Bombing Missions...\n")
 de_df <- dbGetQuery(con, "
-  SELECT target_lat, target_lon, total_tons_clean
+  SELECT target_lat, target_lon, total_tons_clean, year
   FROM missions
   WHERE UPPER(TGT_COUNTRY) IN ('GERMANY', 'AUSTRIA') AND has_valid_target_coords = 1
 ")
-cat(sprintf("Loaded %d Germany/Austria missions.\n", nrow(de_df)))
+cat(sprintf("Loaded %d Germany/Austria records.\n", nrow(de_df)))
 
 de_cities <- data.frame(
   name = c("Berlin", "Hamburg", "Essen (Ruhr)", "Cologne", "Frankfurt", "Munich", "Dresden", "Nuremberg", "Schweinfurt", "Leipzig", "Vienna"),
@@ -294,9 +298,9 @@ p_germany <- ggplot() +
   annotation_scale(location = "bl", width_hint = 0.2, style = "ticks",
                    text_col = "#64748b", line_col = "#64748b") +
   labs(
-    title = "Strategic Bombing of the Third Reich: Germany & Austria (1942–1945)",
+    title = sprintf("Strategic Bombing of the Third Reich: Germany & Austria (%s)", year_range(de_df)),
     subtitle = "The Ruhr industrial heartland ('Happy Valley'), synthetic oil plants, transportation grid, and major cities",
-    caption = "Source: USAF WWII THOR Database • 2.14 Million Tons Dropped across 63,230 Missions"
+    caption = sprintf("Source: USAF WWII THOR Database • %s Tons across %s Geolocated Records", mtons(de_df), comma(nrow(de_df)))
   ) +
   theme_theater_white(title_size = 14, subtitle_size = 9.5) +
   theme(
