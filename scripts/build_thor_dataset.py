@@ -2,7 +2,7 @@
 """
 build_thor_dataset.py - Clean, enrich, and compile the full WWII THOR dataset.
 
-Transforms 178,281 mission operations across all theaters (ETO, PTO, MTO, CBI)
+Transforms 178,281 attack records across all theaters (ETO, PTO, MTO, CBI)
 into optimized analytical formats (Parquet, SQLite, GeoJSON, CSV.GZ).
 """
 

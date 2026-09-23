@@ -6823,7 +6823,7 @@ Operations (THOR Database)</h1>
 <div id="database-connection" class="section level2">
 <h2>1. Database Connection</h2>
 <p>We connect directly to the pre-indexed SQLite database containing the
-complete 178,281 bombing missions.</p>
+complete 178,281 THOR attack records.</p>
 <div class="sourceCode" id="cb1"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" tabindex="-1"></a>con <span class="ot">&lt;-</span> <span class="fu">dbConnect</span>(RSQLite<span class="sc">::</span><span class="fu">SQLite</span>(), <span class="st">&quot;../data/processed/thor_wwii.sqlite&quot;</span>)</span>
 <span id="cb1-2"><a href="#cb1-2" tabindex="-1"></a><span class="fu">dbListTables</span>(con)</span></code></pre></div>
 <pre><code>## [1] &quot;aircraft_glossary&quot; &quot;missions&quot;          &quot;targets_summary&quot;  

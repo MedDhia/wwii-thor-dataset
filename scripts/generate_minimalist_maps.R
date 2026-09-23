@@ -11,7 +11,8 @@ suppressPackageStartupMessages({
   library(ggspatial)
 })
 
-base_dir <- "/Users/mohameddhiahammami/.gemini/antigravity/scratch/wwii-thor-dataset"
+script_arg <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
+base_dir <- if (length(script_arg)) normalizePath(file.path(dirname(sub("^--file=", "", script_arg)), "..")) else getwd()
 gis_dir <- file.path(base_dir, "data", "gis")
 imada_shp <- file.path(gis_dir, "tunisia_imadas", "TN_sectors.shp")
 gov_shp <- file.path(gis_dir, "tunisia_imadas", "TN_governorates.shp")
