@@ -29,6 +29,13 @@ con <- dbConnect(RSQLite::SQLite(), sqlite_path)
 # Labels computed from the plotted records (one row per THOR attack record)
 year_range <- function(df) paste0(min(df$year, na.rm = TRUE), "–", max(df$year, na.rm = TRUE))
 mtons <- function(df) sprintf("%.2fM", sum(df$total_tons_clean, na.rm = TRUE) / 1e6)
+# "Label (123k t)" for each named target country in the plotted records
+country_tons <- function(df, countries) {
+  paste(vapply(names(countries), function(label) {
+    t <- sum(df$total_tons_clean[df$tgt_country %in% countries[[label]]], na.rm = TRUE)
+    if (t >= 1e6) sprintf("%s (%.2fM t)", label, t / 1e6) else sprintf("%s (%.0fk t)", label, t / 1e3)
+  }, character(1)), collapse = ", ")
+}
 
 # Common minimalist theme
 theme_theater_white <- function(title_size = 14, subtitle_size = 9.5) {
@@ -95,7 +102,7 @@ cat("Saved global bombing footprint map.\n")
 # ==============================================================================
 cat("\n[2/5] Querying European Theater (ETO) Missions...\n")
 eto_df <- dbGetQuery(con, "
-  SELECT target_lat, target_lon, total_tons_clean, year
+  SELECT target_lat, target_lon, total_tons_clean, year, UPPER(TGT_COUNTRY) AS tgt_country
   FROM missions
   WHERE THEATER = 'ETO' AND has_valid_target_coords = 1
 ")
@@ -132,7 +139,8 @@ p_eto <- ggplot() +
   labs(
     title = sprintf("The Strategic Bombing Campaign in Europe (ETO, %s)", year_range(eto_df)),
     subtitle = sprintf("USAAF and RAF bombing • %s tons across %s geolocated records", mtons(eto_df), comma(nrow(eto_df))),
-    caption = "Source: USAF WWII THOR Database • Germany (1.99M t), France (783k t), Austria (149k t)"
+    caption = paste("Source: USAF WWII THOR Database •",
+                    country_tons(eto_df, list(Germany = "GERMANY", France = "FRANCE", Austria = "AUSTRIA")))
   ) +
   theme_theater_white(title_size = 14, subtitle_size = 9.5) +
   theme(
@@ -151,7 +159,7 @@ cat("Saved ETO strategic bombing map.\n")
 # ==============================================================================
 cat("\n[3/5] Querying Mediterranean Theater (MTO) Missions...\n")
 mto_df <- dbGetQuery(con, "
-  SELECT target_lat, target_lon, total_tons_clean, year
+  SELECT target_lat, target_lon, total_tons_clean, year, UPPER(TGT_COUNTRY) AS tgt_country
   FROM missions
   WHERE THEATER = 'MTO' AND has_valid_target_coords = 1
 ")
@@ -188,7 +196,8 @@ p_mto <- ggplot() +
   labs(
     title = sprintf("The Mediterranean Air Campaign (MTO, %s)", year_range(mto_df)),
     subtitle = "North Africa (Tunisia, Libya), Italian Peninsula, Balkans & Ploesti Oil Fields (12th & 15th Air Forces)",
-    caption = "Source: USAF WWII THOR Database • Italy (409k t), Romania/Ploesti (43k t), Hungary (39k t), Yugoslavia (36k t)"
+    caption = paste("Source: USAF WWII THOR Database •",
+                    country_tons(mto_df, list(Italy = "ITALY", `Romania/Ploesti` = "ROMANIA", Hungary = "HUNGARY", Yugoslavia = "YUGOSLAVIA")))
   ) +
   theme_theater_white(title_size = 14, subtitle_size = 9.5) +
   theme(
@@ -207,7 +216,7 @@ cat("Saved MTO Mediterranean map.\n")
 # ==============================================================================
 cat("\n[4/5] Querying Pacific & CBI Missions...\n")
 pto_df <- dbGetQuery(con, "
-  SELECT target_lat, target_lon, total_tons_clean, year
+  SELECT target_lat, target_lon, total_tons_clean, year, UPPER(TGT_COUNTRY) AS tgt_country
   FROM missions
   WHERE THEATER IN ('PTO', 'CBI') AND has_valid_target_coords = 1
 ")
@@ -244,7 +253,8 @@ p_pto <- ggplot() +
   labs(
     title = sprintf("The Pacific War & China-Burma-India Theater (PTO / CBI, %s)", year_range(pto_df)),
     subtitle = "Island-hopping campaign, Burma Road, Philippines liberation, and the B-29 strategic offensive on Japan",
-    caption = "Source: USAF WWII THOR Database • Japan (188k t), Philippines (63k t), New Guinea (47k t), Burma (37k t)"
+    caption = paste("Source: USAF WWII THOR Database •",
+                    country_tons(pto_df, list(Japan = "JAPAN", Philippines = "PHILIPPINE ISLANDS", `New Guinea` = "NEW GUINEA", Burma = "BURMA")))
   ) +
   theme_theater_white(title_size = 14, subtitle_size = 9.5) +
   theme(

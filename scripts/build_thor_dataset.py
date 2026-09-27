@@ -10,6 +10,8 @@ import os
 import sys
 import json
 import sqlite3
+import gzip
+import shutil
 import pandas as pd
 import numpy as np
 from datetime import datetime
@@ -28,6 +30,16 @@ OUT_CSV_GZ = os.path.join(PROCESSED_DIR, "thor_wwii_clean.csv.gz")
 OUT_SQLITE = os.path.join(PROCESSED_DIR, "thor_wwii.sqlite")
 OUT_TARGETS_GEOJSON = os.path.join(GIS_DIR, "targets_aggregated.geojson")
 OUT_FLIGHT_PATHS_GEOJSON = os.path.join(GIS_DIR, "flight_paths.geojson")
+
+# Records whose recorded tonnage is not bomb weight dropped. They keep their raw
+# THOR values (TOTAL_TONS, TONS_OF_HE, ...) but get no total_tons_clean, so they
+# drop out of every tonnage total built from it. The reason is kept in
+# tonnage_outlier_reason.
+TONNAGE_OUTLIERS = {
+    149508: "Hiroshima, 6 Aug 1945: TOTAL_TONS is the atomic bomb's 15,000 t TNT-equivalent yield, not bomb weight",
+    150325: "Nagasaki, 9 Aug 1945: TOTAL_TONS is the atomic bomb's 20,000 t TNT-equivalent yield, not bomb weight",
+    50254: "Kassala, 17 Aug 1940: 4,750 t recorded for 6 aircraft, with no HE/IC/frag tonnage; implausible",
+}
 
 def clean_str(val):
     if pd.isna(val):
@@ -199,6 +211,15 @@ def load_and_enrich():
     computed_tons = df["TONS_OF_HE"] + df["TONS_OF_IC"] + df["TONS_OF_FRAG"]
     df["total_tons_clean"] = np.maximum(df["TOTAL_TONS"], computed_tons)
 
+    df["tonnage_outlier_reason"] = df["WWII_ID"].map(TONNAGE_OUTLIERS)
+    outliers = df["tonnage_outlier_reason"].notna()
+    missing = set(TONNAGE_OUTLIERS) - set(df.loc[outliers, "WWII_ID"])
+    if missing:
+        raise ValueError(f"Tonnage outlier IDs not found in THOR data: {sorted(missing)}")
+    print(f"  Excluding {outliers.sum()} tonnage outliers "
+          f"({df.loc[outliers, 'total_tons_clean'].sum():,.0f} t) from total_tons_clean")
+    df.loc[outliers, "total_tons_clean"] = np.nan
+
     return df, ac_gloss, weap_gloss
 
 def export_parquet(df):
@@ -253,9 +274,9 @@ def export_sqlite(df, ac_gloss, weap_gloss):
             ROUND(AVG(target_lon), 4) as avg_lon,
             COUNT(*) as mission_count,
             ROUND(SUM(total_tons_clean), 2) as total_tons,
-            ROUND(SUM(TONS_OF_HE), 2) as he_tons,
-            ROUND(SUM(TONS_OF_IC), 2) as ic_tons,
-            ROUND(SUM(TONS_OF_FRAG), 2) as frag_tons,
+            ROUND(SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_HE END), 2) as he_tons,
+            ROUND(SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_IC END), 2) as ic_tons,
+            ROUND(SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_FRAG END), 2) as frag_tons,
             MIN(mission_date_iso) as first_mission,
             MAX(mission_date_iso) as last_mission
         FROM missions
@@ -272,9 +293,17 @@ def export_sqlite(df, ac_gloss, weap_gloss):
     size = os.path.getsize(OUT_SQLITE)
     print(f"SQLite database saved: {size:,} bytes ({size / (1024*1024):.2f} MB).")
 
+    # The uncompressed database is git-ignored; the .gz copy is the tracked one.
+    with open(OUT_SQLITE, "rb") as f_in, gzip.GzipFile(OUT_SQLITE + ".gz", "wb", compresslevel=9) as f_out:
+        shutil.copyfileobj(f_in, f_out)
+    gz_size = os.path.getsize(OUT_SQLITE + ".gz")
+    print(f"Compressed copy saved: {OUT_SQLITE}.gz ({gz_size / (1024*1024):.2f} MB).")
+
 def export_geojson(df):
     print(f"\nGenerating aggregated targets GeoJSON: {OUT_TARGETS_GEOJSON}...")
     valid_tgt_df = df[df["has_valid_target_coords"]].copy()
+    # Flagged tonnage outliers contribute no tonnage of any type
+    valid_tgt_df.loc[valid_tgt_df["tonnage_outlier_reason"].notna(), ["TONS_OF_HE", "TONS_OF_IC", "TONS_OF_FRAG"]] = np.nan
 
     # Aggregate by rounded coordinates + location to produce high quality point layer
     grouped = valid_tgt_df.groupby(["target_lat", "target_lon", "TGT_COUNTRY", "TGT_LOCATION", "THEATER"]).agg(
@@ -345,7 +374,7 @@ def export_geojson(df):
                 "takeoff_base": clean_str(row["TAKEOFF_BASE"]),
                 "target_location": clean_str(row["TGT_LOCATION"]),
                 "target_country": clean_str(row["TGT_COUNTRY"]),
-                "total_tons": round(float(row["total_tons_clean"]), 2)
+                "total_tons": round(float(row["total_tons_clean"]), 2) if pd.notna(row["total_tons_clean"]) else None
             }
         }
         fp_features.append(feat)

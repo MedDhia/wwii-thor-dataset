@@ -17,6 +17,10 @@ PARQUET_PATH = os.path.join(PROCESSED_DIR, "thor_wwii_enriched.parquet")
 DOCS_DIR = os.path.join(BASE_DIR, "docs")
 NOTEBOOKS_DIR = os.path.join(BASE_DIR, "notebooks")
 
+def records(df):
+    """DataFrame rows as dicts with missing values as None (null in JSON)."""
+    return df.astype(object).where(df.notna(), None).to_dict(orient="records")
+
 def get_db():
     return sqlite3.connect(SQLITE_PATH)
 
@@ -29,9 +33,9 @@ def analyze_theaters(conn):
         THEATER,
         COUNT(*) as total_missions,
         ROUND(SUM(total_tons_clean), 1) as total_tons,
-        ROUND(SUM(TONS_OF_HE), 1) as he_tons,
-        ROUND(SUM(TONS_OF_IC), 1) as ic_tons,
-        ROUND(SUM(TONS_OF_FRAG), 1) as frag_tons,
+        ROUND(SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_HE END), 1) as he_tons,
+        ROUND(SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_IC END), 1) as ic_tons,
+        ROUND(SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_FRAG END), 1) as frag_tons,
         MIN(mission_date_iso) as start_date,
         MAX(mission_date_iso) as end_date
     FROM missions
@@ -51,8 +55,8 @@ def analyze_tunisia(conn):
         TGT_LOCATION as location,
         COUNT(*) as missions,
         ROUND(SUM(total_tons_clean), 1) as total_tons,
-        ROUND(SUM(TONS_OF_HE), 1) as he_tons,
-        ROUND(SUM(TONS_OF_FRAG), 1) as frag_tons,
+        ROUND(SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_HE END), 1) as he_tons,
+        ROUND(SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_FRAG END), 1) as frag_tons,
         MIN(mission_date_iso) as first_strike,
         MAX(mission_date_iso) as last_strike,
         GROUP_CONCAT(DISTINCT aircraft_full_name) as aircraft_used
@@ -90,8 +94,8 @@ def analyze_eto(conn):
         TGT_COUNTRY as country,
         COUNT(*) as missions,
         ROUND(SUM(total_tons_clean), 1) as total_tons,
-        ROUND(SUM(TONS_OF_HE), 1) as he_tons,
-        ROUND(SUM(TONS_OF_IC), 1) as incendiary_tons
+        ROUND(SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_HE END), 1) as he_tons,
+        ROUND(SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_IC END), 1) as incendiary_tons
     FROM missions
     WHERE THEATER = 'ETO'
     GROUP BY TGT_COUNTRY
@@ -111,8 +115,8 @@ def analyze_pto(conn):
         TGT_COUNTRY as country,
         COUNT(*) as missions,
         ROUND(SUM(total_tons_clean), 1) as total_tons,
-        ROUND(SUM(TONS_OF_HE), 1) as he_tons,
-        ROUND(SUM(TONS_OF_IC), 1) as incendiary_tons
+        ROUND(SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_HE END), 1) as he_tons,
+        ROUND(SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_IC END), 1) as incendiary_tons
     FROM missions
     WHERE THEATER = 'PTO'
     GROUP BY TGT_COUNTRY
@@ -128,7 +132,7 @@ def analyze_pto(conn):
         TGT_LOCATION as target,
         COUNT(*) as missions,
         ROUND(SUM(total_tons_clean), 1) as total_tons,
-        ROUND(SUM(TONS_OF_IC), 1) as incendiary_tons,
+        ROUND(SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_IC END), 1) as incendiary_tons,
         MIN(mission_date_iso) as first_raid,
         MAX(mission_date_iso) as last_raid
     FROM missions
@@ -208,7 +212,7 @@ def generate_interactive_dashboard(conn):
     ORDER BY total_tons DESC
     LIMIT 1000;
     """
-    targets = pd.read_sql_query(query, conn).to_dict(orient="records")
+    targets = records(pd.read_sql_query(query, conn))
 
     # Theater yearly progression for charts
     chart_query = """
@@ -221,7 +225,7 @@ def generate_interactive_dashboard(conn):
     GROUP BY year, THEATER
     ORDER BY year, THEATER;
     """
-    chart_data = pd.read_sql_query(chart_query, conn).to_dict(orient="records")
+    chart_data = records(pd.read_sql_query(chart_query, conn))
 
     # Tunisia specific targets
     tunisia_query = """
@@ -237,7 +241,28 @@ def generate_interactive_dashboard(conn):
     WHERE UPPER(target_country) = 'TUNISIA'
     ORDER BY total_tons DESC;
     """
-    tunisia_targets = pd.read_sql_query(tunisia_query, conn).to_dict(orient="records")
+    tunisia_targets = records(pd.read_sql_query(tunisia_query, conn))
+
+    # Headline cards, computed from the data. Records flagged in
+    # tonnage_outlier_reason have no total_tons_clean and are left out of the
+    # HE / IC / Frag sums too.
+    tot = pd.read_sql_query("""
+        SELECT SUM(total_tons_clean) AS total,
+               SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_HE END) AS he,
+               SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_IC END) AS ic,
+               SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_FRAG END) AS frag
+        FROM missions
+    """, conn).iloc[0]
+    th = pd.read_sql_query("""
+        SELECT THEATER, COUNT(*) AS n, SUM(total_tons_clean) AS tons
+        FROM missions GROUP BY THEATER
+    """, conn).set_index("THEATER")
+    n_records = int(th["n"].sum())
+    card = lambda t: (f"{th.at[t, 'tons']:,.0f}", f"{int(th.at[t, 'n']):,}")
+    eto_tons, eto_n = card("ETO")
+    mto_tons, mto_n = card("MTO")
+    pto_tons, pto_n = card("PTO")
+    eto_share = th.at["ETO", "tons"] / tot["total"] * 100
 
     dashboard_html = f"""<!DOCTYPE html>
 <html lang="en">
@@ -281,29 +306,29 @@ def generate_interactive_dashboard(conn):
       <h1>World War II Theater History of Operations (THOR)</h1>
       <p style="font-size: 12px; color: #94a3b8; margin-top: 2px;">Interactive Global Bombing Analysis & Geolocation Explorer (1939–1945)</p>
     </div>
-    <div class="badge">178,281 THOR Attack Records</div>
+    <div class="badge">{n_records:,} THOR Attack Records</div>
   </header>
 
   <div class="stats-bar">
     <div class="card">
       <div class="title">Total Ordnance Dropped</div>
-      <div class="val">4,299,897 t</div>
-      <div class="sub">HE: 3.48M t | Incendiary: 554k t | Frag: 203k t</div>
+      <div class="val">{tot["total"]:,.0f} t</div>
+      <div class="sub">HE: {tot["he"]/1e6:.2f}M t | Incendiary: {tot["ic"]/1e3:,.0f}k t | Frag: {tot["frag"]/1e3:,.0f}k t</div>
     </div>
     <div class="card">
       <div class="title">European Theater (ETO)</div>
-      <div class="val">3,154,321 t</div>
-      <div class="sub">95,827 missions (73.4% of tonnage)</div>
+      <div class="val">{eto_tons} t</div>
+      <div class="sub">{eto_n} records ({eto_share:.1f}% of tonnage)</div>
     </div>
     <div class="card">
       <div class="title">Mediterranean (MTO)</div>
-      <div class="val">591,589 t</div>
-      <div class="sub">30,532 missions (North Africa / Italy)</div>
+      <div class="val">{mto_tons} t</div>
+      <div class="sub">{mto_n} records (North Africa / Italy)</div>
     </div>
     <div class="card">
       <div class="title">Pacific Theater (PTO)</div>
-      <div class="val">438,268 t</div>
-      <div class="sub">36,192 missions (Inc. B-29 raids)</div>
+      <div class="val">{pto_tons} t</div>
+      <div class="sub">{pto_n} records (Inc. B-29 raids)</div>
     </div>
   </div>
 
@@ -544,9 +569,9 @@ def generate_jupyter_notebook():
                 "    THEATER, \n",
                 "    COUNT(*) as missions,\n",
                 "    ROUND(SUM(total_tons_clean), 1) as total_tons,\n",
-                "    ROUND(SUM(TONS_OF_HE), 1) as he_tons,\n",
-                "    ROUND(SUM(TONS_OF_IC), 1) as ic_tons,\n",
-                "    ROUND(SUM(TONS_OF_FRAG), 1) as frag_tons\n",
+                "    ROUND(SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_HE END), 1) as he_tons,\n",
+                "    ROUND(SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_IC END), 1) as ic_tons,\n",
+                "    ROUND(SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_FRAG END), 1) as frag_tons\n",
                 "FROM missions\n",
                 "GROUP BY THEATER\n",
                 "ORDER BY total_tons DESC;\n",
@@ -643,7 +668,7 @@ def generate_jupyter_notebook():
                 "    TGT_LOCATION as target,\n",
                 "    COUNT(*) as missions,\n",
                 "    ROUND(SUM(total_tons_clean), 1) as total_tons,\n",
-                "    ROUND(SUM(TONS_OF_IC), 1) as incendiary_tons,\n",
+                "    ROUND(SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_IC END), 1) as incendiary_tons,\n",
                 "    MIN(mission_date_iso) as first_raid,\n",
                 "    MAX(mission_date_iso) as last_raid\n",
                 "FROM missions\n",
@@ -723,8 +748,8 @@ theaters <- dbGetQuery(con, "
     THEATER as theater, 
     COUNT(*) as missions,
     ROUND(SUM(total_tons_clean), 1) as total_tons,
-    ROUND(SUM(TONS_OF_HE), 1) as he_tons,
-    ROUND(SUM(TONS_OF_IC), 1) as ic_tons
+    ROUND(SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_HE END), 1) as he_tons,
+    ROUND(SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_IC END), 1) as ic_tons
   FROM missions
   GROUP BY THEATER
   ORDER BY total_tons DESC

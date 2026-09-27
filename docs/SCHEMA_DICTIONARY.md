@@ -1,10 +1,10 @@
 # WWII THOR Dataset Schema & Field Dictionary
 
-The enriched WWII THOR dataset contains **78 columns**: 62 original DoD/AFRI operational attributes plus 16 computed and enriched attributes for temporal, geospatial, ordnance, and aircraft analysis.
+The enriched WWII THOR dataset contains **79 columns**: 62 original DoD/AFRI operational attributes plus 17 computed and enriched attributes for temporal, geospatial, ordnance, and aircraft analysis.
 
 ---
 
-## 🌟 Enriched & Standardized Attributes (16 Columns)
+## 🌟 Enriched & Standardized Attributes (17 Columns)
 
 | Field Name | Type | Description |
 |---|---|---|
@@ -23,7 +23,8 @@ The enriched WWII THOR dataset contains **78 columns**: 62 original DoD/AFRI ope
 | `aircraft_category` | String | Functional aircraft role (e.g. `Heavy Bomber`, `Medium Bomber`, `Fighter / Fighter-Bomber`). |
 | `aircraft_glossary_link` | String | Reference URL to military factory / historical archive for the aircraft model. |
 | `country_flying_mission_clean`| String | Copy of `COUNTRY_FLYING_MISSION` (`USA`, `GREAT BRITAIN`, `NEW ZEALAND`, `AUSTRALIA`, `SOUTH AFRICA`); no values are changed, and 51,787 records are blank. |
-| `total_tons_clean` | Float | Greater of recorded `TOTAL_TONS` or HE + IC + Frag tons. This raises 345 records above their recorded total (e.g. Cologne, 30 Oct 1944: 714 → 1,614 t). Outliers are **not** removed: the Hiroshima and Nagasaki records carry 15,000 t and 20,000 t (TNT-equivalent yield, not bombs dropped) and a 17 Aug 1940 Kassala record carries 4,750 t from 6 aircraft. |
+| `total_tons_clean` | Float | Greater of recorded `TOTAL_TONS` or HE + IC + Frag tons. This raises 345 records above their recorded total (e.g. Cologne, 30 Oct 1944: 714 → 1,614 t). Empty for the 3 records flagged in `tonnage_outlier_reason`, so they drop out of any sum. |
+| `tonnage_outlier_reason` | String | Why a record's tonnage is excluded from totals; empty otherwise. Set for Hiroshima (`WWII_ID` 149508) and Nagasaki (150325), whose 15,000 t and 20,000 t are TNT-equivalent yield rather than bomb weight, and Kassala, 17 Aug 1940 (50254), 4,750 t for 6 aircraft. Raw THOR columns are left as recorded. |
 
 ---
 

@@ -35,8 +35,8 @@ theaters <- dbGetQuery(con, "
     THEATER as theater, 
     COUNT(*) as missions,
     ROUND(SUM(total_tons_clean), 1) as total_tons,
-    ROUND(SUM(TONS_OF_HE), 1) as he_tons,
-    ROUND(SUM(TONS_OF_IC), 1) as ic_tons
+    ROUND(SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_HE END), 1) as he_tons,
+    ROUND(SUM(CASE WHEN tonnage_outlier_reason IS NULL THEN TONS_OF_IC END), 1) as ic_tons
   FROM missions
   GROUP BY THEATER
   ORDER BY total_tons DESC
